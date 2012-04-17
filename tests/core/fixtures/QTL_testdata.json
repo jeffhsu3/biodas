@@ -1,0 +1,13 @@
+[
+    {
+        "fields": {
+            "chrom": 1,
+            "start": 2000,
+            "end": 2600,
+            "strand": 'True',
+        },
+        "model": "core.QTL",
+        "pk": 1
+    }
+
+]

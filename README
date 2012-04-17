@@ -1,0 +1,15 @@
+Jeff Hsu
+
+License: MIT?
+
+Django and Tastypie implementation of a distributed annotation server (DAS) used
+for serving biological data.  Can be used to serve both DAS 1 and DAS 2.  
+
+See www.biodas.org/wiki/Main_Page for specification.  
+
+References:
+
+Requirements:
+Django
+Tastypie
+lxml
