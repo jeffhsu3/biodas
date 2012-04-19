@@ -111,7 +111,6 @@ def top_level_serializer(resources, options=None):
     """
     sources = Element('SOURCES')
     for name in resources:
-        print(resources[name].base_fields)
         source = Element('SOURCE', uri = name)
         sources.append(source)
 

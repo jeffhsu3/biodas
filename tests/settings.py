@@ -34,7 +34,8 @@ INSTALLED_APPS = [
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-CACHE_BACKEND = 'locmem://'
+
+#CACHES
 
 USE_TZ = True
 

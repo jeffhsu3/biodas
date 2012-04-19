@@ -1,13 +1,14 @@
 [
     {
+        "model": "core.qtlentry",
+        "pk" : 1,
         "fields": {
             "chrom": 1,
             "start": 2000,
             "end": 2600,
+            "gene": "Test",
             "strand": 'True',
-        },
-        "model": "core.QTLEntry",
-        "pk": 1,
-    }
 
+        },
+    }
 ]

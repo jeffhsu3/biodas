@@ -1,7 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.conf.urls.defaults import *
 from django.http import HttpResponse
-#from django.core.serializers import xml
 from tastypie.api import Api
 from tastypie.resources import Resource
 from tastypie.utils.mime import determine_format, build_content_type
@@ -64,9 +63,8 @@ class DAS(Api):
         """ Provides URLconf details for the API and all registered sources
         beneth it.
         """
-
         pattern_list = [
-            url(r"^(?P<api_name>%s)%s$" % (self.api_name, trailing_slash()),
+            url(r"^(?P<api_name>%s)/sources" % (self.api_name),
                 self.wrap_view('top_level'),
                 name="api_%s_top_level" % self.api_name),
         ]
@@ -75,9 +73,8 @@ class DAS(Api):
 
         for name in sorted(self._registry.keys()):
             self._registry[name].api_name = self.api_name
-            pattern_list.append((r"^(?P<api_name>%s/sources%s" % (self.api_name,
-                                                         trailing_slash(),
-                                                         )))
+            pattern_list.append((r"^(?P<api_name>%s)/" % self.api_name,
+                                 include(self._registry[name].urls)))
 
         urlpatterns = self.override_urls() + patterns('',*pattern_list)
 
@@ -90,27 +87,29 @@ class DAS(Api):
         """
         # :TODO default to xml
         serializer = DAS_serializer()
-        sources = []
-        available_resources = {}
+        sources = self._registry
 
         # Make this a form
 
-        if request.POST:
-            capability = request.POST.get('capability')
-            s_type = request.POST.get('type')
-            authority = request.POST.get('authority')
-            version = request.POST.get('version')
-            organism = request.POST.get('organism')
-            label = request.POST.get('label')
+        if request.GET:
+            capability = request.GET.get('capability')
+            s_type = request.GET.get('type')
+            authority = request.GET.get('authority')
+            version = request.GET.get('version')
+            organism = request.GET.get('organism')
+            label = request.GET.get('label')
+            sources = dict((key, value) for key, value in sources.items() if \
+                       value.DAS_VERSION == version)
+
+            print(sources)
 
         if api_name is None:
             api_name = self.api_name
 
-
         #desired_format = determine_format(request, serializer)
         desired_format = 'application/xml'
         options = {}
-        response = HttpResponse(content = top_level_serializer(self._registry),
+        response = HttpResponse(content = top_level_serializer(sources),
                      content_type=build_content_type(desired_format))
         response = add_das_headers(response)
         return response
@@ -123,11 +122,3 @@ class DAS(Api):
         import os
         pass
 
-
-
-class DAS_source(Resource):
-    """
-    """
-
-    def query(self, func):
-        pass
