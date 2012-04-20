@@ -17,9 +17,8 @@ class BedResource(DASModelResource):
 
 
 class QTLResource(DASModelResource):
-    DAS_VERSION = 1.5
+    version = 36 
     class Meta:
-        das_version = 1.5
         resource_name = 'qtl'
         queryset = QTLEntry.objects.all()
 
@@ -28,6 +27,8 @@ class ApiTestCase(TestCase):
     #fixtures = ['QTL_testdata.json']
 
     def test_register(self):
+        """ Test basic registration of sources with the DAS server
+        """
         api = DAS()
         self.assertEqual(len(api._registry), 0)
 
@@ -48,19 +49,31 @@ class ApiTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
         #print(resp.content)
 
+        # Testing Response Headers
+        self.assertEqual(resp['X-DAS-Version'], 'DAS/1.6')
+
+
+
 
 class ApiCalls(TestCase):
     """ Test actual get responses
     """
     urls = 'core.tests.api_urls'
     #fixtures = ['testdata.json']
+    # Fixtures aren't working
 
     def setUp(self):
+        self.qtl = QTLEntry(chrom = 1, start = 27000, end = 29000,
+                                 gene="outside_interval", strand = True)
+        self.qtl.save()
         self.qtl = QTLEntry(chrom = 1, start = 2000, end = 2600,
-                                 gene="Testgene", strand = True)
+                                 gene="within_interval", strand = True)
+        self.qtl.save()
+        self.qtl = QTLEntry(chrom = 2, start = 2000, end = 2600,
+                                 gene="chr2_test", strand = True)
+        self.qtl.save()
         self.bed = BedEntry(chrom = 1, start = 2000, end = 2600,
                                  gene="Testgene", strand = True)
-        self.qtl.save()
         self.bed.save()
 
     def test_top_level(self):
@@ -73,20 +86,32 @@ class ApiCalls(TestCase):
         self.assertEqual(len(root), 2)
 
         # Check queries
-        resp = self.client.get('/api/das/sources?version=1.6')
-        #print(resp)
+        resp = self.client.get('/api/das/sources?version=36')
         root = lxml.etree.fromstring(resp.content)
+        self.assertEqual(len(root), 1)
+
+    def test_resource_top_level(self):
+        """ Test the top level for the resources
+        """
+        resp = self.client.get('/api/das/bed/')
+        root = lxml.etree.fromstring(resp.content)
+        self.assertEqual(len(root), 1)
+        resp = self.client.get('/api/das/qtl/')
         self.assertEqual(len(root), 1)
 
 
     def test_resource_queries(self):
+        """ Test segment queries on the resources
         """
-        """
-        resp = self.client.get('/api/das/bed/')
-        #print(resp)
-        resp = self.client.get('/api/das/qtl/')
-        #print(resp)
+        resp = self.client.get('/api/das/qtl/features?segment=1:100,20000')
+        print(resp)
 
 
+class DASFileSourcesTest(TestCase):
+    def setUp(self):
+        pass
+
+    def test_registration(self):
+        pass
 
 

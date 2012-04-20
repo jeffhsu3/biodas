@@ -7,45 +7,16 @@ from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.utils import trailing_slash
 
 from serializers import DAS_serializer, top_level_serializer
-
-
-
-def add_das_headers(response, version = 1.6):
-    """ Add DAS specification headers
-    """
-    if version == 2:
-        # :TODO BioDAS 2 specifications
-        response['Content-Type'] = 'text/xml'
-    else:
-        response['Content-Type'] = 'text/xml'
-    # :TODO make to specific sources
-    response['X-DAS-Version'] = 'DAS/%f' % version
-    response['X-DAS-Status'] = 200
-    response['X-DAS-Capabilities'] = 'features/1.0;'
-    response['X-DAS-Server'] = 'DjangoDas'
-    response['Access-Control-Allow-Origin'] = '*'
-    response['Access-Control-Expose-Headers'] =\
-            'X-DAS-Version, X-DAS-Status, X-DAS-Capabilities, X-DAS-Server'
-    return response
-
-
-
-def parse_das_request(request):
-    """ Parse a das request
-    """
-    if request.POST:
-        seg = request.POST.get('segment')
-    try:
-        seg = int(seg)
-    except ValueError:
-        pass
+from utils import add_das_headers 
 
 
 class DAS(Api):
     """ Container for a Das Server
     """
 
-    def __init__(self, api_name="das", version = 1.6):
+    def __init__(self, api_name="das", version = '1.6'):
+        """ Version needs to be a string because of 1.6E extension
+        """
         self.api_name = api_name
         self._registry = {}
         self._canonicals = {}
@@ -86,10 +57,7 @@ class DAS(Api):
         A view that returns a serialized list of all DAS_sources in registers.
         """
         # :TODO default to xml
-        serializer = DAS_serializer()
         sources = self._registry
-
-        # Make this a form
 
         if request.GET:
             capability = request.GET.get('capability')
@@ -99,9 +67,7 @@ class DAS(Api):
             organism = request.GET.get('organism')
             label = request.GET.get('label')
             sources = dict((key, value) for key, value in sources.items() if \
-                       value.DAS_VERSION == version)
-
-            print(sources)
+                       value.version == int(version))
 
         if api_name is None:
             api_name = self.api_name
@@ -111,7 +77,7 @@ class DAS(Api):
         options = {}
         response = HttpResponse(content = top_level_serializer(sources),
                      content_type=build_content_type(desired_format))
-        response = add_das_headers(response)
+        response = add_das_headers(response, self.version)
         return response
 
 
