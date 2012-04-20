@@ -109,8 +109,9 @@ class DAS_serializer(Serializer):
 def top_level_serializer(resources, options=None):
     """ Serializes the top-level query
     """
+    #:TODO lots of fields to fix to reflect the resource
     sources = Element('SOURCES')
-    for name in resources:
+    for name, resource in resources.items():
         source = Element('SOURCE', uri = name)
         sources.append(source)
 
@@ -119,15 +120,49 @@ def top_level_serializer(resources, options=None):
         source.append(version)
 
         coordinate = Element('COORDINATES', uri = 'uri', source ='data type',
-                            authority = 'authority', taxid = 'taxonomy',
+                            authority = resource.authority, taxid = 'taxonomy',
                              version='version', test_range='id:start,stop')
         version.append(coordinate)
         version.append(Element('CAPABILITIES', type="das1:command", 
                               query_uri="URL"))
         version.append(Element('PROP', name='key', value="value"))
 
+
         coordinate.text = 'hg19'
 
     return(tostring(sources, xml_declaration = True, encoding ='utf-8',
                     pretty_print = True))
 
+
+def feature_serializer(request, bundle, **kwargs):
+    """ Serialize a feature bundle.  
+
+    :TODO Need to make this more generic for both DAS model resources and File
+    Resources.
+    """
+    dasgff = Element('DASGFF')
+    req_href = request.path + '?' +\
+            request.META['QUERY_STRING']
+    das = Element('GFF', href = req_href)
+    dasgff.append(das)
+    # :TODO check to see if all segments are the same in the bundle
+    segment = Element('SEGMENT', id='id', start='start', stop='stop')
+    das.append(segment)
+    for i in bundle:
+        # Need to grab pk from the object, thought it defaults?
+        print(i.pk)
+        feature = Element("FEATURE", label = i.gene) 
+        segment.append(feature)
+        f_type = Element("TYPE", category = "Don't get",
+                cvID = "SO:1234")
+        f_type.text = 'Read'
+        feature.append(f_type)
+        method = Element("METHOD")
+        method.text = 'HTS'
+        feature.append(method)
+        #feature.apend(Element("START"))
+    print('hmm')
+
+        # :TODO type, how to handle since most file formats don't have it
+    return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
+        pretty_print=True))

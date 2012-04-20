@@ -3,3 +3,4 @@ docs/build/
 build/
 docs/make.bat
 docs/Makefile
+*.swp
