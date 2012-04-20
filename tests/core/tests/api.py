@@ -62,13 +62,16 @@ class ApiCalls(TestCase):
 
     def setUp(self):
         self.qtl = QTLEntry(chrom = 1, start = 27000, end = 29000,
-                                 gene="outside_interval", strand = True)
+                                 gene="outside_interval", strand = True,
+                                 score = 20)
         self.qtl.save()
         self.qtl = QTLEntry(chrom = 1, start = 2000, end = 2600,
-                                 gene="within_interval", strand = True)
+                                 gene="within_interval", strand = True,
+                                 score = 50)
         self.qtl.save()
         self.qtl = QTLEntry(chrom = 2, start = 2000, end = 2600,
-                                 gene="chr2_test", strand = True)
+                                 gene="chr2_test", strand = True,
+                                 score = 60)
         self.qtl.save()
         self.bed = BedEntry(chrom = 1, start = 2000, end = 2600,
                                  gene="Testgene", strand = True)

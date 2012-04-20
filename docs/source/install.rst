@@ -19,6 +19,8 @@ Dependencies
 * django-tastypie
 
 Optional:
+* For serving BAM files you'll need pysam
+* For serving BIGBED and BIGWIG you'll need Cython
 * A database: mysql, postgresql, mongodb, etc
 
 I highly recommend using pip.  

@@ -72,6 +72,8 @@ class DASModelResource(ModelResource):
         if 'chrom' in self.fields:
             pass
         # :TODO Need to implement type, category, feature_id and maxbins
+        # :TODO Check if model has a Kent bin.  Also benchmark using this overa
+        # standard index.
         reference = int(reference)
         self.is_authenticated(request)
         try:

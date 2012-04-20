@@ -61,11 +61,17 @@ def feature_serializer(request, bundle, **kwargs):
         method = Element("METHOD")
         method.text = 'HTS'
         feature.append(method)
-        start = Element("START")
-        start.text = str(i.start)
-        feature.append(start)
-        end = Element("END")
-        end.text = str(i.end)
-        feature.append(end)
+
+        # Optional Elements
+        opts = ["start", "end", "score", "orientation", "phase", "group",
+        "parent", "target"]
+        for opt in opts:
+            value = getattr(i, opt, None)
+            if value:
+                opt_element = Element(opt.upper())
+                opt_element.text = str(value)
+                feature.append(opt_element)
+            else: pass
+        
     return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
         pretty_print=True))

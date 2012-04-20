@@ -17,6 +17,7 @@ class QTLEntry(models.Model):
     end = models.IntegerField(max_length = 9)
     gene = models.CharField(max_length = 300)
     strand = models.BooleanField()
+    score = models.IntegerField(max_length = 3)
 
     def __unicode__(self):
         return(self.gene)
