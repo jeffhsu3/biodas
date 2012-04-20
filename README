@@ -10,6 +10,6 @@ See www.biodas.org/wiki/Main_Page for specification.
 References:
 
 Requirements:
-Django
-Tastypie
+django
+django-tastypie
 lxml
