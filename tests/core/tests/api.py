@@ -104,7 +104,17 @@ class ApiCalls(TestCase):
         """ Test segment queries on the resources
         """
         resp = self.client.get('/api/das/qtl/features?segment=1:100,20000')
-        print(resp)
+        dasgff = lxml.etree.fromstring(resp.content)
+        self.assertEqual(dasgff[0][0][0].get('label'), 'within_interval')
+
+
+    def test_whole_segment_query(self):
+        """ Test that a whole segment query returns the whole segment
+        :TODO need to handle throttling
+        """
+        resp = self.client.get('/api/das/qtl/features?segment=1')
+        segment = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertEqual(len(segment), 2)
 
 
 class DASFileSourcesTest(TestCase):

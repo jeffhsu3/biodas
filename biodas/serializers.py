@@ -150,18 +150,24 @@ def feature_serializer(request, bundle, **kwargs):
     das.append(segment)
     for i in bundle:
         # Need to grab pk from the object, thought it defaults?
-        print(i.pk)
         feature = Element("FEATURE", label = i.gene) 
+        # id is reserved
+        feature.set('id', str(i.pk))
         segment.append(feature)
         f_type = Element("TYPE", category = "Don't get",
                 cvID = "SO:1234")
+        f_type.set('id', '900')
         f_type.text = 'Read'
         feature.append(f_type)
         method = Element("METHOD")
         method.text = 'HTS'
         feature.append(method)
-        #feature.apend(Element("START"))
-    print('hmm')
+        start = Element("START")
+        start.text = str(i.start)
+        feature.append(start)
+        end = Element("END")
+        end.text = str(i.end)
+        feature.append(end)
 
         # :TODO type, how to handle since most file formats don't have it
     return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',

@@ -29,7 +29,7 @@ class DASModelResource(ModelResource):
         # Why isn't this working?
         default_format = 'application/xml'
 
-    
+
     def override_urls(self):
 
         return [
@@ -53,7 +53,7 @@ class DASModelResource(ModelResource):
         response = add_das_headers(response)
         return response
 
-    
+
     def get_features(self, request, **kwargs):
         """ Returns a DAS GFF xml.  
 
@@ -64,8 +64,6 @@ class DASModelResource(ModelResource):
         make this a factory so that specific fields and be mapped to the
         segment and start end.  
         """
-        # Lots of extra stuff in ModelResource.build_filters().  Below is a
-        # more lightweight implementation that fits the BioDAS specification
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
 
@@ -86,22 +84,18 @@ class DASModelResource(ModelResource):
         except ValueError:
             print('hmmm bad request')
             raise BadRequest('Invalid Request')
-
+        segments = {reference,'start': start}
         # Do I need to convert to a bundle, or too much.  
         '''
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
         '''
-        print('calling serializer')
         content = feature_serializer(request, base_object_list)
-        print(content)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
         return response
-        
-
 
 
 
@@ -113,8 +107,16 @@ class DASResource(Resource):
     authority = "Gr"
     version = "37"
     organism = "homo sapiens"
-    pass
     filename = ''
 
     class Meta:
         default_format = 'application/xml'
+
+    def get_list(self, request, **kwargs):
+        registry = {getattr(self._meta , 'resource_name'): self}
+        content = serializers.top_level_serializer(registry)
+        response = HttpResponse(
+            content = content,
+            content_type = 'application/xml')
+        response = add_das_headers(response)
+        return response
