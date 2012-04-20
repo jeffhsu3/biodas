@@ -66,7 +66,7 @@ class DASModelResource(ModelResource):
         """
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
-
+        query_seg = {'id': reference, 'start':start, 'stop':stop}
         # Attempts to be smart about field mapping
         # :TODO implement this
         if 'chrom' in self.fields:
@@ -75,23 +75,26 @@ class DASModelResource(ModelResource):
         reference = int(reference)
         self.is_authenticated(request)
         try:
-            base_object_list = self.get_object_list(request).filter(
-                    Q(start__range=(start,stop)) |\
-                    Q(end__range=(start,stop)), 
-                    chrom__exact = reference)
+            if start:
+                base_object_list = self.get_object_list(request).filter(
+                        Q(start__range=(start,stop)) |\
+                        Q(end__range=(start,stop)), 
+                        chrom__exact = reference)
+            else:
+                base_object_list = self.get_object_list(request).filter(
+                        chrom__exact = reference)
             #base_object_list = 
             # :TODO authorization check
         except ValueError:
-            print('hmmm bad request')
             raise BadRequest('Invalid Request')
-        segments = {reference,'start': start}
         # Do I need to convert to a bundle, or too much.  
         '''
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
         '''
-        content = feature_serializer(request, base_object_list)
+        print('Begin Serialization')
+        content = feature_serializer(request, base_object_list, **query_seg)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)

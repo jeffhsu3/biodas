@@ -53,8 +53,6 @@ class ApiTestCase(TestCase):
         self.assertEqual(resp['X-DAS-Version'], 'DAS/1.6')
 
 
-
-
 class ApiCalls(TestCase):
     """ Test actual get responses
     """
@@ -115,6 +113,7 @@ class ApiCalls(TestCase):
         resp = self.client.get('/api/das/qtl/features?segment=1')
         segment = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segment), 2)
+        print(resp.content)
 
 
 class DASFileSourcesTest(TestCase):

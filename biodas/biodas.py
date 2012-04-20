@@ -6,7 +6,7 @@ from tastypie.resources import Resource
 from tastypie.utils.mime import determine_format, build_content_type
 from tastypie.utils import trailing_slash
 
-from serializers import DAS_serializer, top_level_serializer
+from serializers import top_level_serializer
 from utils import add_das_headers 
 
 
