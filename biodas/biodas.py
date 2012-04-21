@@ -59,6 +59,7 @@ class DAS(Api):
         # :TODO default to xml
         sources = self._registry
 
+        # :TODO finish this
         if request.GET:
             capability = request.GET.get('capability')
             s_type = request.GET.get('type')

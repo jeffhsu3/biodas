@@ -1,3 +1,4 @@
+import os
 import lxml
 
 from django.contrib.auth.models import User
@@ -6,9 +7,8 @@ from django.test import TestCase
 from django.test.client import Client
 from tastypie.exceptions import NotRegistered, BadRequest
 from core.models import BedEntry, QTLEntry
-from tastypie.resources import Resource, ModelResource
 
-from biodas import DAS, DASModelResource
+from biodas import DAS, DASModelResource, DASResource 
 
 class BedResource(DASModelResource):
     class Meta:
@@ -21,6 +21,15 @@ class QTLResource(DASModelResource):
     class Meta:
         resource_name = 'qtl'
         queryset = QTLEntry.objects.all()
+
+
+class FileBedResource(DASResource):
+    """
+    """
+    filename = os.path.join(os.path.dirname(__file__), 'test.bed')
+    class Meta:
+        resource_name = 'testbed'
+
 
 class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
@@ -84,7 +93,7 @@ class ApiCalls(TestCase):
         self.assertEqual(resp.status_code, 200)
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(root.tag, 'SOURCES')
-        self.assertEqual(len(root), 2)
+        self.assertEqual(len(root), 3)
 
         # Check queries
         resp = self.client.get('/api/das/sources?version=36')
@@ -116,7 +125,6 @@ class ApiCalls(TestCase):
         resp = self.client.get('/api/das/qtl/features?segment=1')
         segment = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segment), 2)
-        print(resp.content)
 
 
 class DASFileSourcesTest(TestCase):
@@ -124,6 +132,7 @@ class DASFileSourcesTest(TestCase):
         pass
 
     def test_registration(self):
-        pass
+        resp = self.client.get('/api/das/testbed/features?segment=chr1')
+        print(resp)
 
 

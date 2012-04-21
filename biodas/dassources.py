@@ -95,7 +95,6 @@ class DASModelResource(ModelResource):
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
         '''
-        print('Begin Serialization')
         content = feature_serializer(request, base_object_list, **query_seg)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
@@ -114,6 +113,7 @@ class DASResource(Resource):
     organism = "homo sapiens"
     filename = ''
 
+    
     class Meta:
         default_format = 'application/xml'
 
@@ -125,3 +125,49 @@ class DASResource(Resource):
             content_type = 'application/xml')
         response = add_das_headers(response)
         return response
+    
+    
+    def override_urls(self):
+        print('overide urls')
+
+        return [
+            url(r"^(?P<resource_name>%s)/features" %
+                (self._meta.resource_name), self.wrap_view('get_features'),
+                name = 'api_get_features'),
+        ]
+    
+    
+    def get_features(self, request, **kwargs):
+        """ Returns a DAS GFF xml.  
+
+        Calls ''obj_get'' to fetch only the objects requested.  This method
+        only responds to HTTP GET.  
+
+        Similar to obj_get_list in ModelResource with modifications.  Need to
+        make this a factory so that specific fields and be mapped to the
+        segment and start end.  
+        """
+        print('get_features called') 
+        try:
+            import pysam
+        except ImportError:
+            raise ImportError('handling of bam files requires pysam')
+        try:
+            fh = open(self.filename, 'rU')
+        except ValueError:
+            print("can't find file")
+        print(self.filename)
+        if hasattr(request, 'GET'):
+            reference, start, stop = parse_das_segment(request)
+        
+        #fh.seek(position)
+        for line in fh:
+            line = line.rstrip("\n").split("\t")
+            if line[0] == str(reference):
+                print("yes")
+        
+        response = HttpResponse(content = 'hi',
+                content_type = 'application/xml')
+        response = add_das_headers(response)
+        return response
+

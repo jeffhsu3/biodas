@@ -54,7 +54,6 @@ def feature_serializer(request, bundle, **kwargs):
     for i in bundle:
         feature = Element("FEATURE", id = str(i.pk), label = i.gene) 
         segment.append(feature)
-        # :TODO How to handle types
         f_type = Element("TYPE", id = "900", category = "Don't get", cvID = "SO:1234")
         f_type.text = 'Read'
         feature.append(f_type)
