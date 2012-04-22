@@ -1,5 +1,9 @@
+""" Contains resources that bind django ORMs or to file resources
+"""
+from itertools import izip
+
 from django.conf.urls.defaults import url
-from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+#from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse
 from django.db.models import Q
 from tastypie.resources import Resource, ModelResource
@@ -8,6 +12,16 @@ from utils import parse_das_segment, add_das_headers
 import serializers 
 from serializers import feature_serializer
 
+
+class DASBaseResource(Resource):
+    """ A Base Class for DAS resources.  Use DASModelResource or
+    DASFileResource.
+    """
+
+    capability = "feature"
+    chr_tyep = "Chromosome"
+    authority = "GRCh"
+    version = 37
 
 class DASModelResource(ModelResource):
     """  For resources that are already from the django ORM.
@@ -85,7 +99,6 @@ class DASModelResource(ModelResource):
             else:
                 base_object_list = self.get_object_list(request).filter(
                         chrom__exact = reference)
-            #base_object_list = 
             # :TODO authorization check
         except ValueError:
             raise BadRequest('Invalid Request')
@@ -102,9 +115,32 @@ class DASModelResource(ModelResource):
         return response
 
 
+class BaseResult(object):
+    """ Construct an object similar to Django's ORM for universal input into
+    the serializer.  
+    """
+
+    def __init__(self, *initial_data, **kwargs):
+        print('creating base result')
+        for dictionary in initial_data:
+            for key in dictionary:
+                setattr(self, key, dictionary[key])
+            for key in kwargs:
+                setattr(self, key, kwargs[key])
+
+
+def generate_bed_dict(line, bed_header):
+    """ Generate a dictionar with the default bed header labels as keys and
+    attributes as values.  
+    """
+    print('attempting to generate bed dict')
+    out_dict = dict((key, value) for key, value in izip(bed_header, line))
+    print(out_dict)
+    return(out_dict)
+
 
 class DASResource(Resource):
-    """
+    """ A class to handle file formats
     """
     capability = "features"
     chr_type = "Chromosome"
@@ -128,7 +164,6 @@ class DASResource(Resource):
     
     
     def override_urls(self):
-        print('overide urls')
 
         return [
             url(r"^(?P<resource_name>%s)/features" %
@@ -147,11 +182,10 @@ class DASResource(Resource):
         make this a factory so that specific fields and be mapped to the
         segment and start end.  
         """
-        print('get_features called') 
         try:
             import pysam
         except ImportError:
-            raise ImportError('handling of bam files requires pysam')
+            raise ImportError('Handling of bam files requires pysam')
         try:
             fh = open(self.filename, 'rU')
         except ValueError:
@@ -159,14 +193,35 @@ class DASResource(Resource):
         print(self.filename)
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
-        
+
+        BED_HEADERS = ['reference', 'start', 'end', 'name', 'score',
+        'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
+        'blocksizes', 'blockstarts']
+
+        print('generating hits')
+
+        hits = []
+        # Just a test        
+        # Maybe offer a suggestion for non-indexed files?
         #fh.seek(position)
         for line in fh:
             line = line.rstrip("\n").split("\t")
             if line[0] == str(reference):
-                print("yes")
-        
-        response = HttpResponse(content = 'hi',
+                print(line)
+                if start < int(line[1]) < stop or\
+                        start < int(line[2]) < stop:
+                    print('yes')
+                    hmm = generate_bed_dict(line, BED_HEADERS)
+                    print(hmm)
+                    hits.append(BaseResult(hmm))
+
+                    print(hits)
+                else:
+                    print('no')
+            else: pass 
+        print(hits)
+        content = feature_serializer(request, hits) 
+        response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
         return response

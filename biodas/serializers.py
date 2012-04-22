@@ -4,11 +4,33 @@
 from lxml.etree import Element, tostring
 
 
+def get_label(feat_obj):
+    """ Attempt to be intelligent about getting the label/name
+    of a feature.
+    """
+    pos_labels = ['name', 'label', 'gene']
+    for name in pos_labels:
+        label = getattr(feat_obj, name, None)
+        if label:
+            break
+    return(label)
+
+
+def get_type(feat_obj):
+    """ Attemt to get the type of a feature if it exists.
+    """
+    pass
+
+def feature_attributes(label, pk):
+    """ Generate a dictionary for the feature attributes
+    """
+    pass
+
+
 def top_level_serializer(resources, options=None):
     """ Serializes the top-level query
     """
     
-    #:TODO lots of fields to fix to reflect the resource
     if options:
         print(options)
     sources = Element('SOURCES')
@@ -16,7 +38,9 @@ def top_level_serializer(resources, options=None):
         source = Element('SOURCE', uri = name)
         sources.append(source)
 
-        source.append(Element('MAINTAINER', email = 'jeffhsu3@gmail.com'))
+        email = getattr(source, 'email', 'NA')
+
+        source.append(Element('MAINTAINER', email = email))
         version = Element('VERSION', uri = name, created='now')
         source.append(version)
         coordinate = Element('COORDINATES', uri = 'uri', source ='data type',
@@ -35,31 +59,34 @@ def top_level_serializer(resources, options=None):
 
 
 def feature_serializer(request, bundle, **kwargs):
-    """ Serialize a feature bundle.  
-
-    :TODO Need to make this more generic for both DAS model resources and File
-    Resources.
+    """ Serialize a list of feature.  
     """
+    #print('beginning serialization')
     dasgff = Element('DASGFF')
-    req_href = request.path + '?' +\
-            request.META['QUERY_STRING']
-    das = Element('GFF', href = req_href)
-    # :TODO How to handle types
+    das = Element('GFF', href = request.path + '?' +\
+            request.META['QUERY_STRING'])
     dasgff.append(das)
-    # :TODO check to see if all segments are the same in the bundle
-    seg_query = dict(((key,str(value)) for key, value in kwargs.items() if\
+    seg_query = dict(((key, str(value)) for key, value in kwargs.items() if\
             value))
     segment = Element('SEGMENT', seg_query)
     das.append(segment)
+    #print('first part done')
+
+
     for i in bundle:
+        print(i)
+        # Attempt to be intelligent about the gene/label name
+        # How to handle Nones?
         feature = Element("FEATURE", id = str(i.pk), label = i.gene) 
         segment.append(feature)
-        f_type = Element("TYPE", id = "900", category = "Don't get", cvID = "SO:1234")
+        f_type = Element("TYPE", id = "900", category = "Don't get", 
+                cvID = "SO:1234")
         f_type.text = 'Read'
         feature.append(f_type)
         method = Element("METHOD")
         method.text = 'HTS'
         feature.append(method)
+        #print('Required Sections done')
 
         # Optional Elements
         opts = ["start", "end", "score", "orientation", "phase", "group",
@@ -71,6 +98,7 @@ def feature_serializer(request, bundle, **kwargs):
                 opt_element.text = str(value)
                 feature.append(opt_element)
             else: pass
+        #print('opts done')
         
     return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
         pretty_print=True))

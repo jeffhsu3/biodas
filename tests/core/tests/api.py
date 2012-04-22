@@ -31,6 +31,12 @@ class FileBedResource(DASResource):
         resource_name = 'testbed'
 
 
+class BamResource(DASResource):
+    """
+    """
+    pass
+
+
 class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
     #fixtures = ['QTL_testdata.json']
@@ -133,6 +139,12 @@ class DASFileSourcesTest(TestCase):
 
     def test_registration(self):
         resp = self.client.get('/api/das/testbed/features?segment=chr1')
-        print(resp)
+        print(resp.content)
+        resp = self.client.get('/api/das/testbed/features?segment=chr1:60,200')
+        pass
+
+
+    def test_feature_queries(self):
+        pass
 
 

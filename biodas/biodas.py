@@ -8,6 +8,7 @@ from tastypie.utils import trailing_slash
 
 from serializers import top_level_serializer
 from utils import add_das_headers 
+from forms import DASSourcesForm
 
 
 class DAS(Api):
@@ -56,17 +57,17 @@ class DAS(Api):
         """
         A view that returns a serialized list of all DAS_sources in registers.
         """
-        # :TODO default to xml
         sources = self._registry
 
-        # :TODO finish this
         if request.GET:
-            capability = request.GET.get('capability')
-            s_type = request.GET.get('type')
-            authority = request.GET.get('authority')
-            version = request.GET.get('version')
-            organism = request.GET.get('organism')
-            label = request.GET.get('label')
+            form = DASSourcesForm(request.GET)
+            if form.is_valid():
+                version = form.cleaned_data['version']
+                capability = form.cleaned_data['capability']
+                authority = form.cleaned_data['authority']
+                stype = form.cleaned_data['type']
+                organism = form.cleaned_data['organism']
+                
             sources = dict((key, value) for key, value in sources.items() if \
                        value.version == int(version))
 
