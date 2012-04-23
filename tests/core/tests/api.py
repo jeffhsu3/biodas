@@ -29,6 +29,7 @@ class FileBedResource(DASResource):
     filename = os.path.join(os.path.dirname(__file__), 'test.bed')
     class Meta:
         resource_name = 'testbed'
+        filename = os.path.join(os.path.dirname(__file__), 'test.bed')
 
 
 class BamResource(DASResource):

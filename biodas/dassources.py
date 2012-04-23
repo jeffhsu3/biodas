@@ -5,11 +5,28 @@ from itertools import izip
 from django.conf.urls.defaults import url
 from django.http import HttpResponse
 from django.db.models import Q
-from tastypie.resources import Resource, ModelResource
+from tastypie.resources import (Resource, ModelResource, 
+                                DeclarativeMetaclass, ResourceOptions)
 
 from utils import parse_das_segment, add_das_headers
 import serializers 
 from serializers import feature_serializer
+
+
+class DasResourceOptions(ResourceOptions):
+    filename = ''
+
+
+class DASFileMetaClass(DeclarativeMetaclass):
+    def __new__(cls, name, bases, attrs):
+        # Base field inhertience don't done by DeclarativeMetaClass
+        new_class = super(DASFileMetaClass, cls).__new__(cls, name, bases,
+                attrs)
+        opts = getattr(new_class, 'Meta', None)
+        new_class._meta = DasResourceOptions(opts)
+        filename = getattr(new_class._meta, "filename")
+
+        return new_class
 
 
 class DASBaseResource(Resource):
@@ -21,6 +38,11 @@ class DASBaseResource(Resource):
     chr_tyep = "Chromosome"
     authority = "GRCh"
     version = 37
+
+
+class DASTestResource(Resource):
+    """ Me fooling around to get things to work
+    """
 
 
 class DASModelResource(ModelResource):
@@ -149,6 +171,7 @@ class DASResource(Resource):
     version = "37"
     organism = "homo sapiens"
     filename = ''
+    __metaclass__ = DASFileMetaClass
 
     
     class Meta:
@@ -198,6 +221,8 @@ class DASResource(Resource):
         BED_HEADERS = ['reference', 'start', 'end', 'name', 'score',
         'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
         'blocksizes', 'blockstarts']
+
+        print(getattr(self._meta, 'filename'))
 
         hits = []
         # Maybe offer a suggestion for non-indexed files?

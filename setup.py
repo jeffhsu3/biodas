@@ -27,6 +27,11 @@ metadata = {'name':name,
             'description':'biodas',
             'author':'Jeffrey Hsu',
             'packages':['biodas'],
+            'requires':[
+                'lxml',
+                'django',
+                'tastypie',
+                ],
 }
 
 
