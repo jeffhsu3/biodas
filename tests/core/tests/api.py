@@ -137,8 +137,11 @@ class DASFileSourcesTest(TestCase):
     def setUp(self):
         pass
 
-    def test_registration(self):
-        pass
+    def test_resource_top_level(self):
+        resp = self.client.get('/api/das/testbed/')
+        root = lxml.etree.fromstring(resp.content)
+        self.assertEqual(len(root), 1)
+        # Add more checks to this
 
 
     def test_feature_queries(self):

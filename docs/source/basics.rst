@@ -3,7 +3,7 @@ Basics
 ***********
 
 django-biodas uses django-tastypie as the basis for generating an api like
-response that fits the biodas specification.  
+response that follows the biodas specification.  
 
 Adding a Django Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -25,6 +25,7 @@ If you already have a django ORM for biological data, it is straigtforward to ge
 
 4. Register the resource with the DAS api in ''urls.py'' ::
    
+    from biodas import DAS
     from api.resource import YourResource
     
     api = DAS()

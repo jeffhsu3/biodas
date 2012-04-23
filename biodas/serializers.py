@@ -4,35 +4,29 @@
 from lxml.etree import Element, tostring
 
 
-def get_label(feat_obj):
-    """ Attempt to be intelligent about getting the label/name
-    of a feature.
-    """
-    pos_labels = ['name', 'label', 'gene']
-    for name in pos_labels:
-        label = getattr(feat_obj, name, None)
-        if label:
-            break
-    return(label)
-
-
 def get_type(feat_obj):
     """ Attempt to get the type of a feature if it exists.
     """
     
     pass
 
+
 def feature_attributes(feat_obj):
-    """ Generate a dictionary for the feature attributes
+    """ Generate a dictionary for the feature attributes.
     """
     FEAT_LABELS = ['id', 'pk']
+    pos_labels = ['name', 'label', 'gene']
     
     for pk in FEAT_LABELS:
         feat_id = getattr(feat_obj, pk, None)
         if feat_id:
             break
 
-    label = get_label(feat_obj)
+    for name in pos_labels:
+        label = getattr(feat_obj, name, None)
+        if label:
+            break
+    
     attr_dict = dict((key, str(value)) for key, value\
             in zip(['id','label'], [feat_id, label])\
             if value) 
@@ -86,6 +80,7 @@ def feature_serializer(request, bundle, **kwargs):
 
 
     for i in bundle:
+        # :TODO deal with features
         feat_dict  = feature_attributes(i)
         feature = Element("FEATURE", feat_dict) 
         segment.append(feature)

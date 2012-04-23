@@ -22,6 +22,7 @@ class DASBaseResource(Resource):
     authority = "GRCh"
     version = 37
 
+
 class DASModelResource(ModelResource):
     """  For resources that are already from the django ORM.
 
@@ -199,7 +200,6 @@ class DASResource(Resource):
         'blocksizes', 'blockstarts']
 
         hits = []
-        # Just a test        
         # Maybe offer a suggestion for non-indexed files?
         #fh.seek(position)
 
@@ -227,4 +227,3 @@ class DASResource(Resource):
                 content_type = 'application/xml')
         response = add_das_headers(response)
         return response
-

@@ -1,12 +1,12 @@
 #!/usr/bin/python
-
 import os, sys, glob
-
-name = 'biodas'
-version = '0.1'
 
 from distutils.core import setup
 from distutils.extension import Extension
+from setuptools import find_packages
+
+name = 'biodas'
+version = '0.1'
 
 try:
     from Cython.Distutils import build_ext
