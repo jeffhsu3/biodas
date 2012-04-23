@@ -129,8 +129,8 @@ class ApiCalls(TestCase):
         :TODO need to handle throttling
         """
         resp = self.client.get('/api/das/qtl/features?segment=1')
-        segment = lxml.etree.fromstring(resp.content)[0][0]
-        self.assertEqual(len(segment), 2)
+        segments = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertEqual(len(segments), 2)
 
 
 class DASFileSourcesTest(TestCase):
@@ -138,13 +138,23 @@ class DASFileSourcesTest(TestCase):
         pass
 
     def test_registration(self):
-        resp = self.client.get('/api/das/testbed/features?segment=chr1')
-        print(resp.content)
-        resp = self.client.get('/api/das/testbed/features?segment=chr1:60,200')
         pass
 
 
     def test_feature_queries(self):
-        pass
+        """ Test region:start, end query on various file sources.
+        """
+        
+        resp = self.client.get('/api/das/testbed/features?segment=chr1:60,200')
+        segments = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertEqual(len(segments), 2)
+
+    def test_whole_segment_query(self):
+        """ Test that a whole segment query returns the whole segment
+        """
+        resp = self.client.get('/api/das/testbed/features?segment=chr1')
+        segments = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertEqual(len(segments), 3)
+
 
 

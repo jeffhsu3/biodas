@@ -17,14 +17,26 @@ def get_label(feat_obj):
 
 
 def get_type(feat_obj):
-    """ Attemt to get the type of a feature if it exists.
+    """ Attempt to get the type of a feature if it exists.
     """
+    
     pass
 
-def feature_attributes(label, pk):
+def feature_attributes(feat_obj):
     """ Generate a dictionary for the feature attributes
     """
-    pass
+    FEAT_LABELS = ['id', 'pk']
+    
+    for pk in FEAT_LABELS:
+        feat_id = getattr(feat_obj, pk, None)
+        if feat_id:
+            break
+
+    label = get_label(feat_obj)
+    attr_dict = dict((key, str(value)) for key, value\
+            in zip(['id','label'], [feat_id, label])\
+            if value) 
+    return(attr_dict)
 
 
 def top_level_serializer(resources, options=None):
@@ -61,7 +73,8 @@ def top_level_serializer(resources, options=None):
 def feature_serializer(request, bundle, **kwargs):
     """ Serialize a list of feature.  
     """
-    #print('beginning serialization')
+
+    # Remember all values for xml attributes must be strings!
     dasgff = Element('DASGFF')
     das = Element('GFF', href = request.path + '?' +\
             request.META['QUERY_STRING'])
@@ -70,14 +83,11 @@ def feature_serializer(request, bundle, **kwargs):
             value))
     segment = Element('SEGMENT', seg_query)
     das.append(segment)
-    #print('first part done')
 
 
     for i in bundle:
-        print(i)
-        # Attempt to be intelligent about the gene/label name
-        # How to handle Nones?
-        feature = Element("FEATURE", id = str(i.pk), label = i.gene) 
+        feat_dict  = feature_attributes(i)
+        feature = Element("FEATURE", feat_dict) 
         segment.append(feature)
         f_type = Element("TYPE", id = "900", category = "Don't get", 
                 cvID = "SO:1234")
@@ -86,7 +96,6 @@ def feature_serializer(request, bundle, **kwargs):
         method = Element("METHOD")
         method.text = 'HTS'
         feature.append(method)
-        #print('Required Sections done')
 
         # Optional Elements
         opts = ["start", "end", "score", "orientation", "phase", "group",
@@ -98,7 +107,6 @@ def feature_serializer(request, bundle, **kwargs):
                 opt_element.text = str(value)
                 feature.append(opt_element)
             else: pass
-        #print('opts done')
         
     return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
         pretty_print=True))

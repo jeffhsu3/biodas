@@ -3,9 +3,14 @@
 Installation
 ***************************
 
-The easiest way to install is through pypi.
+Working on a package atm.
 
-pip install django django-tastypie django-das
+Installing from source
+~~~~~~~~~~~~~~~~~~~~~~
+The source is available from github:::
+
+   git clone git://github.com/jeffhsu3/biodas.git 
+   python setup.py install
 
 Binary installers
 ~~~~~~~~~~~~~~~~~
@@ -19,9 +24,9 @@ Dependencies
 * django-tastypie
 
 Optional:
-* For serving BAM files you'll need pysam
-* For serving BIGBED and BIGWIG you'll need Cython
-* A database: mysql, postgresql, mongodb, etc
+
+* pysam (for serving BAM files)
+* cython (for serving BIGBED and BIGWIG)
 
 I highly recommend using pip.  
 

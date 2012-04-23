@@ -3,7 +3,6 @@
 from itertools import izip
 
 from django.conf.urls.defaults import url
-#from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from django.http import HttpResponse
 from django.db.models import Q
 from tastypie.resources import Resource, ModelResource
@@ -88,6 +87,7 @@ class DASModelResource(ModelResource):
         # :TODO Need to implement type, category, feature_id and maxbins
         # :TODO Check if model has a Kent bin.  Also benchmark using this overa
         # standard index.
+        # :TODO make reference more general
         reference = int(reference)
         self.is_authenticated(request)
         try:
@@ -117,11 +117,13 @@ class DASModelResource(ModelResource):
 
 class BaseResult(object):
     """ Construct an object similar to Django's ORM for universal input into
-    the serializer.  
+    the serializer. 
+
+    :TODO Probably too much overhead to make a python object.  However allows
+    generalization.  
     """
 
     def __init__(self, *initial_data, **kwargs):
-        print('creating base result')
         for dictionary in initial_data:
             for key in dictionary:
                 setattr(self, key, dictionary[key])
@@ -133,9 +135,7 @@ def generate_bed_dict(line, bed_header):
     """ Generate a dictionar with the default bed header labels as keys and
     attributes as values.  
     """
-    print('attempting to generate bed dict')
     out_dict = dict((key, value) for key, value in izip(bed_header, line))
-    print(out_dict)
     return(out_dict)
 
 
@@ -190,37 +190,39 @@ class DASResource(Resource):
             fh = open(self.filename, 'rU')
         except ValueError:
             print("can't find file")
-        print(self.filename)
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
+        query_seg = {'id': reference, 'start':start, 'stop':stop}
 
         BED_HEADERS = ['reference', 'start', 'end', 'name', 'score',
         'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
         'blocksizes', 'blockstarts']
 
-        print('generating hits')
-
         hits = []
         # Just a test        
         # Maybe offer a suggestion for non-indexed files?
         #fh.seek(position)
+
+        #################################################
+        #
+        # Specific Queryies depending on the data source
+        #
+        #################################################
+        
         for line in fh:
             line = line.rstrip("\n").split("\t")
             if line[0] == str(reference):
-                print(line)
-                if start < int(line[1]) < stop or\
+                if not start and not stop:
+                    hit = generate_bed_dict(line, BED_HEADERS)
+                    hits.append(BaseResult(hit))
+                elif start < int(line[1]) < stop or\
                         start < int(line[2]) < stop:
-                    print('yes')
-                    hmm = generate_bed_dict(line, BED_HEADERS)
-                    print(hmm)
-                    hits.append(BaseResult(hmm))
-
-                    print(hits)
-                else:
-                    print('no')
+                    hit = generate_bed_dict(line, BED_HEADERS)
+                    hits.append(BaseResult(hit))
+                else: pass
             else: pass 
-        print(hits)
-        content = feature_serializer(request, hits) 
+        
+        content = feature_serializer(request, hits, **query_seg) 
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
