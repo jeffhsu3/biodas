@@ -17,8 +17,8 @@ class BedResource(DASModelResource):
 
 
 class QTLResource(DASModelResource):
-    version = 36 
     class Meta:
+        version = 36 
         resource_name = 'qtl'
         queryset = QTLEntry.objects.all()
 
@@ -69,7 +69,7 @@ class ApiTestCase(TestCase):
         self.assertEqual(resp['X-DAS-Version'], 'DAS/1.6')
 
 
-class ApiCalls(TestCase):
+class DasModelCalls(TestCase):
     """ Test actual get responses
     """
     urls = 'core.tests.api_urls'
@@ -133,12 +133,18 @@ class ApiCalls(TestCase):
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 2)
 
+        resp = self.client.get('/api/das/bed/features?segment=1')
+        segments = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertEqual(len(segments), 1)
+
 
 class DASFileSourcesTest(TestCase):
     def setUp(self):
         pass
 
     def test_resource_top_level(self):
+        """
+        """
         resp = self.client.get('/api/das/testbed/')
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(len(root), 1)

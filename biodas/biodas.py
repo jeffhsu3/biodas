@@ -67,9 +67,9 @@ class DAS(Api):
                 authority = form.cleaned_data['authority']
                 stype = form.cleaned_data['type']
                 organism = form.cleaned_data['organism']
-                
+
             sources = dict((key, value) for key, value in sources.items() if \
-                       value.version == int(version))
+                       value._meta.version == int(version))
 
         if api_name is None:
             api_name = self.api_name

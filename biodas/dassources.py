@@ -6,7 +6,8 @@ from django.conf.urls.defaults import url
 from django.http import HttpResponse
 from django.db.models import Q
 from tastypie.resources import (Resource, ModelResource, 
-                                DeclarativeMetaclass, ResourceOptions)
+                                DeclarativeMetaclass, ResourceOptions,
+                                ModelDeclarativeMetaclass)
 
 from utils import parse_das_segment, add_das_headers
 import serializers 
@@ -14,35 +15,87 @@ from serializers import feature_serializer
 
 
 class DasResourceOptions(ResourceOptions):
-    filename = ''
-
-
-class DASFileMetaClass(DeclarativeMetaclass):
-    def __new__(cls, name, bases, attrs):
-        # Base field inhertience don't done by DeclarativeMetaClass
-        new_class = super(DASFileMetaClass, cls).__new__(cls, name, bases,
-                attrs)
-        opts = getattr(new_class, 'Meta', None)
-        new_class._meta = DasResourceOptions(opts)
-        filename = getattr(new_class._meta, "filename")
-
-        return new_class
-
-
-class DASBaseResource(Resource):
-    """ A Base Class for DAS resources.  Use DASModelResource or
-    DASFileResource.
+    """ Provides Human defaults for the metadata.  User really needs to set
+    these however.   
     """
-
     capability = "feature"
     chr_tyep = "Chromosome"
     authority = "GRCh"
     version = 37
+    
+    filename = ''
+    filetype = ''
+    queryfunc = ''
+    # Make it easy to specify a custom query function
 
 
-class DASTestResource(Resource):
-    """ Me fooling around to get things to work
+class DasFileMetaclass(DeclarativeMetaclass):
+    def __new__(cls, name, bases, attrs):
+        new_class = super(DasFileMetaclass, cls).__new__(cls, name, bases,
+                attrs)
+        opts = getattr(new_class, 'Meta', None)
+        new_class._meta = DasResourceOptions(opts)
+        # Note that ResourceOptions and DasResourceOptions both get called.
+        filename = getattr(new_class._meta, "filename")
+
+        filetypes = { 
+                'bam': 'bam_query',
+                'bed': 'bed_query',
+                'bb': 'bigbed_query',
+                'bw': 'bigwig_query',
+                'gff': 'gff_query',
+                }
+
+        return new_class
+
+class DasModelMetaclass(ModelDeclarativeMetaclass):
+    def __new__(cls, name, bases, attrs):
+
+            
+        new_class = super(DasModelMetaclass, cls).__new__(cls, name, bases,
+                attrs)
+
+        # Overide previous meta with das defaults
+        opts = getattr(new_class, 'Meta', None)
+        new_class._meta = DasResourceOptions(opts)
+        return new_class
+
+
+class DasBaseResource(Resource):
+    """ A Base Class for DAS resources.  Use DasModelResource or
+    DasFileResource.
     """
+    __metaclass__ = DasFileMetaclass
+    
+    
+    def override_urls(self):
+
+        return [
+            url(r"^(?P<resource_name>%s)/features" %
+                (self._meta.resource_name), self.wrap_view('get_features'),
+                name = 'api_get_features'),
+        ]
+
+    
+    def get_list(self, request, **kwargs):
+        """ Replaces the standard resource response with the sources one.
+        """
+        # :TODO modify top_level_serializer or pass a list with self as
+        # argument?
+        registry = {getattr(self._meta , 'resource_name'): self}
+        content = serializers.top_level_serializer(registry)
+        response = HttpResponse(
+            content = content,
+            content_type = 'application/xml')
+        response = add_das_headers(response)
+        return response
+
+    # Views
+
+    def get_features(self, request, **kwargs):
+        """ Needs to be implemented at the user level
+        """
+        raise NotImplementedError()
 
 
 class DASModelResource(ModelResource):
@@ -53,18 +106,7 @@ class DASModelResource(ModelResource):
     """
     # :TODO Need to check that the django model has some required fields
     # upon initialization
-    # Need to somehow place this in the meta information easily
-    capability = "features"
-    chr_type = "Chromosome"
-    authority = "GRCh"
-    version = 37
-    organism = "homo sapiens"
-    # label = source_name
-
-    class Meta:
-        # Why isn't this working?
-        default_format = 'application/xml'
-
+    __metaclass__ = DasModelMetaclass
 
     def override_urls(self):
 
@@ -162,38 +204,9 @@ def generate_bed_dict(line, bed_header):
     return(out_dict)
 
 
-class DASResource(Resource):
+class DASResource(DasBaseResource):
     """ A class to handle file formats
     """
-    capability = "features"
-    chr_type = "Chromosome"
-    authority = "Gr"
-    version = "37"
-    organism = "homo sapiens"
-    filename = ''
-    __metaclass__ = DASFileMetaClass
-
-    
-    class Meta:
-        default_format = 'application/xml'
-
-    def get_list(self, request, **kwargs):
-        registry = {getattr(self._meta , 'resource_name'): self}
-        content = serializers.top_level_serializer(registry)
-        response = HttpResponse(
-            content = content,
-            content_type = 'application/xml')
-        response = add_das_headers(response)
-        return response
-    
-    
-    def override_urls(self):
-
-        return [
-            url(r"^(?P<resource_name>%s)/features" %
-                (self._meta.resource_name), self.wrap_view('get_features'),
-                name = 'api_get_features'),
-        ]
     
     
     def get_features(self, request, **kwargs):
@@ -221,8 +234,6 @@ class DASResource(Resource):
         BED_HEADERS = ['reference', 'start', 'end', 'name', 'score',
         'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
         'blocksizes', 'blockstarts']
-
-        print(getattr(self._meta, 'filename'))
 
         hits = []
         # Maybe offer a suggestion for non-indexed files?

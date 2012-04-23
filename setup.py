@@ -32,6 +32,11 @@ metadata = {'name':name,
                 'django',
                 'tastypie',
                 ],
+            'install_requires':[
+                'lxml',
+                'django',
+                'tastypie',
+                ],
 }
 
 

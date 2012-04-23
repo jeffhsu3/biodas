@@ -39,19 +39,26 @@ def top_level_serializer(resources, options=None):
     
     if options:
         print(options)
+    
     sources = Element('SOURCES')
     for name, resource in resources.items():
         source = Element('SOURCE', uri = name)
         sources.append(source)
-
-        email = getattr(source, 'email', 'NA')
-
+        email = getattr(resource._meta, 'email', 'NA')
         source.append(Element('MAINTAINER', email = email))
         version = Element('VERSION', uri = name, created='now')
         source.append(version)
-        coordinate = Element('COORDINATES', uri = 'uri', source ='data type',
-                            authority = resource.authority, taxid = 'taxonomy',
-                             version='version', test_range='id:start,stop')
+
+        # :TODO Coordinate uri needs to be gotton somehow easily and automatically 
+        coordinate = Element('COORDINATES', 
+                uri = 'uri', 
+                source ='data type',
+                authority = 'temp', 
+                taxid = 'taxonomy',
+                version='version', 
+                test_range='id:start,stop'
+                )
+        
         version.append(coordinate)
         version.append(Element('CAPABILITIES', type="das1:command", 
                               query_uri="URL"))
@@ -80,7 +87,7 @@ def feature_serializer(request, bundle, **kwargs):
 
 
     for i in bundle:
-        # :TODO deal with features
+        # :TODO deal with feature types
         feat_dict  = feature_attributes(i)
         feature = Element("FEATURE", feat_dict) 
         segment.append(feature)
@@ -88,6 +95,7 @@ def feature_serializer(request, bundle, **kwargs):
                 cvID = "SO:1234")
         f_type.text = 'Read'
         feature.append(f_type)
+        # Hmm need to do something about methods
         method = Element("METHOD")
         method.text = 'HTS'
         feature.append(method)
