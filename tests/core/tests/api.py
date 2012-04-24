@@ -8,22 +8,22 @@ from django.test.client import Client
 from tastypie.exceptions import NotRegistered, BadRequest
 from core.models import BedEntry, QTLEntry
 
-from biodas import DAS, DASModelResource, DASResource 
+from biodas import DAS, DasModelResource, DasResource 
 
-class BedResource(DASModelResource):
+class BedResource(DasModelResource):
     class Meta:
         resource_name = 'bed'
         queryset = BedEntry.objects.all()
 
 
-class QTLResource(DASModelResource):
+class QTLResource(DasModelResource):
     class Meta:
         version = 36 
         resource_name = 'qtl'
         queryset = QTLEntry.objects.all()
 
 
-class FileBedResource(DASResource):
+class FileBedResource(DasResource):
     """
     """
     filename = os.path.join(os.path.dirname(__file__), 'test.bed')
@@ -32,7 +32,7 @@ class FileBedResource(DASResource):
         filename = os.path.join(os.path.dirname(__file__), 'test.bed')
 
 
-class BamResource(DASResource):
+class BamResource(DasResource):
     """
     """
     pass
@@ -40,7 +40,6 @@ class BamResource(DASResource):
 
 class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
-    #fixtures = ['QTL_testdata.json']
 
     def test_register(self):
         """ Test basic registration of sources with the DAS server
@@ -73,8 +72,6 @@ class DasModelCalls(TestCase):
     """ Test actual get responses
     """
     urls = 'core.tests.api_urls'
-    #fixtures = ['testdata.json']
-    # Fixtures aren't working
 
     def setUp(self):
         self.qtl = QTLEntry(chrom = 1, start = 27000, end = 29000,
@@ -107,6 +104,8 @@ class DasModelCalls(TestCase):
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(len(root), 1)
 
+        #resp = self.client.get('/api/das/sources?version=36?capabilit=1.5')
+
     def test_resource_top_level(self):
         """ Test the top level for the resources
         """
@@ -138,7 +137,7 @@ class DasModelCalls(TestCase):
         self.assertEqual(len(segments), 1)
 
 
-class DASFileSourcesTest(TestCase):
+class DasFileSourcesTest(TestCase):
     def setUp(self):
         pass
 

@@ -15,13 +15,16 @@ If you already have a django ORM for biological data, it is straigtforward to ge
 3. In the api directory, create a ''<my_app>/api/resource.py'' file and place
    the following in it::
     
-    from biodas import DASModelResource
+    from biodas import DasModelResource
     from yourapp.models import YourModel
 
-    class YourResource(DASModelResource):
+    class YourResource(DasModelResource):
         class Meta:
-        resource_name ='bed'
-        queryset = YourModel.objects.all()
+            resource_name ='yourdata'
+            queryset = YourModel.objects.all()
+
+            version = '36'
+            authority = 'NCBI'
 
 4. Register the resource with the DAS api in ''urls.py'' ::
    
@@ -35,9 +38,36 @@ If you already have a django ORM for biological data, it is straigtforward to ge
       (r'^api/', include(api.urls)),
       )
 
+Doing so generates a api that is accessible from this url:::
+   
+   /api/yourdata
+
+Querying over features:::
+
+   /api/yourdata/features?segment=chr1:20,60
+
+
 
 Generating a resource from a file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Additionally django-biodas makes it really easy to generate an api from a file
-such as a BAM, BIGWIG, VCF, or BIGBED file.
+such as a BAM, BIGWIG, VCF, BED, GFF or BIGBED file::
+
+   from biodas import DasFileResource
+
+   class FileResource(DasFileResource):
+       class Meta:
+           filename = 'my.gff'
+           resource_name = 'mygff'
+            
+
+biodas attempts to intelligently parse the file format.  You can explicitly set
+the file format using:::
+
+   class Meta:
+       filetype = 'gff'
+
+Registering the server with the DAS registry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Not yet implemented
