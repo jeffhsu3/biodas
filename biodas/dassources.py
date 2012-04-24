@@ -19,7 +19,7 @@ class DasResourceOptions(ResourceOptions):
     these however.   
     """
     capability = "feature"
-    chr_tyep = "Chromosome"
+    chr_type = "Chromosome"
     authority = "GRCh"
     version = 37
     
@@ -38,12 +38,20 @@ class DasFileMetaclass(DeclarativeMetaclass):
         # Note that ResourceOptions and DasResourceOptions both get called.
         filename = getattr(new_class._meta, "filename")
 
+        if getattr(new_class._meta, "filetype", None):
+            try:
+                pass
+            except KeyError:
+                raise KeyError("Bleh")
+
         filetypes = { 
                 'bam': 'bam_query',
                 'bed': 'bed_query',
                 'bb': 'bigbed_query',
                 'bw': 'bigwig_query',
                 'gff': 'gff_query',
+                'vcf': 'vcf_query',
+                'fa': 'fa_query',
                 }
 
         return new_class
@@ -166,7 +174,7 @@ class DASModelResource(ModelResource):
                         chrom__exact = reference)
             # :TODO authorization check
         except ValueError:
-            raise BadRequest('Invalid Request')
+            raise ValueError('Invalid Request')
         # Do I need to convert to a bundle, or too much.  
         '''
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
@@ -220,10 +228,6 @@ class DASResource(DasBaseResource):
         segment and start end.  
         """
         try:
-            import pysam
-        except ImportError:
-            raise ImportError('Handling of bam files requires pysam')
-        try:
             fh = open(self.filename, 'rU')
         except ValueError:
             print("can't find file")
@@ -231,35 +235,54 @@ class DASResource(DasBaseResource):
             reference, start, stop = parse_das_segment(request)
         query_seg = {'id': reference, 'start':start, 'stop':stop}
 
-        BED_HEADERS = ['reference', 'start', 'end', 'name', 'score',
-        'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
-        'blocksizes', 'blockstarts']
-
-        hits = []
-        # Maybe offer a suggestion for non-indexed files?
-        #fh.seek(position)
 
         #################################################
         #
         # Specific Queryies depending on the data source
         #
         #################################################
-        
-        for line in fh:
-            line = line.rstrip("\n").split("\t")
-            if line[0] == str(reference):
-                if not start and not stop:
-                    hit = generate_bed_dict(line, BED_HEADERS)
-                    hits.append(BaseResult(hit))
-                elif start < int(line[1]) < stop or\
-                        start < int(line[2]) < stop:
-                    hit = generate_bed_dict(line, BED_HEADERS)
-                    hits.append(BaseResult(hit))
-                else: pass
-            else: pass 
+        print('querying')
+        hits =  self.bed_query(**query_seg)
+        print(hits)
         
         content = feature_serializer(request, hits, **query_seg) 
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
         return response
+
+    def bed_query(self, **kwargs):
+        ''' This is for unindexed files, and should only be used if the BEDfile
+        is very small
+        '''
+        try:
+            fh = open(self._meta.filename, 'rU')
+        except ValueError:
+            print("can't find file")
+        hits = []
+        BED_HEADERS = ['reference', 'start', 'end', 'name', 'score',
+        'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
+        'blocksizes', 'blockstarts']
+        # :TODO deal with file comments
+        
+        for line in fh:
+            line = line.rstrip("\n").split("\t")
+            if line[0] == str(kwargs['id']):
+                if not kwargs['start'] and not kwargs['stop']:
+                    hit = generate_bed_dict(line, BED_HEADERS)
+                    hits.append(BaseResult(hit))
+                elif kwargs['start'] < int(line[1]) < kwargs['stop'] or\
+                        kwargs['start'] < int(line[2]) < kwargs['stop']:
+                    hit = generate_bed_dict(line, BED_HEADERS)
+                    hits.append(BaseResult(hit))
+                else: pass
+            else: pass 
+
+        return hits
+
+    def bam_query(self, **kwargs):
+        try:
+            import pysam
+        except ImportError:
+            raise ImportError('Handling of bam files requires pysam')
+        raise NotImplementedError()

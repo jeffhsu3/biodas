@@ -88,5 +88,5 @@ class DAS(Api):
         files within a folder.  All files must be indexed binary files.
         """
         import os
-        pass
+        raise NotImplementedError()
 
