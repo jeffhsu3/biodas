@@ -21,6 +21,7 @@ Dependencies
 ~~~~~~~~~~~~
 * 'python <http://www.python.org>'__: 2.7 or 3.
 * django
+* lxml
 * django-tastypie
 
 Optional:

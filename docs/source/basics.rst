@@ -2,7 +2,7 @@
 Basics
 ***********
 
-django-biodas uses django-tastypie as the basis for generating an api like
+django-biodas uses django-tastypie as the basis for generating a xml 
 response that follows the biodas specification.  
 
 Adding a Django Model
@@ -62,11 +62,24 @@ such as a BAM, BIGWIG, VCF, BED, GFF or BIGBED file::
            resource_name = 'mygff'
             
 
-biodas attempts to intelligently parse the file format.  You can explicitly set
+biodas attempts to intelligently parse the file format.  You can manually set
 the file format using:::
 
    class Meta:
        filetype = 'gff'
+
+
+Note unindexed files such as BEDFiles will have long query times.
+
+
+You can also generate a reference server in addition to a feature server.  
+
+JSON based responses
+~~~~~~~~~~~~~~~~~~~~
+Although the xml response is the default response for biodas servers, biodas
+has the option to return JSON responses.  The specification for the JSON
+response can be found :TODO 
+
 
 Registering the server with the DAS registry
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

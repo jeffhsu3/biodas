@@ -16,3 +16,4 @@ lxml
 
 Optional requirements:
 pysam
+cython

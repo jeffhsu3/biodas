@@ -10,6 +10,7 @@ from core.models import BedEntry, QTLEntry
 
 from biodas import DAS, DasModelResource, DasResource 
 
+
 class BedResource(DasModelResource):
     class Meta:
         resource_name = 'bed'
@@ -24,7 +25,9 @@ class QTLResource(DasModelResource):
 
 
 class FileBedResource(DasResource):
-    """
+    """ An example of a BED file used as a resource.  
+
+    NOTE: This is not recommended for use for large bed files.
     """
     filename = os.path.join(os.path.dirname(__file__), 'test.bed')
     class Meta:
@@ -32,10 +35,16 @@ class FileBedResource(DasResource):
         filename = os.path.join(os.path.dirname(__file__), 'test.bed')
 
 
-class BamResource(DasResource):
+
+class FileBamResource(DasResource):
+    """ An example of a BAM file used as a resource
     """
-    """
-    pass
+    class Meta:
+        resource_name = 'testbam'
+        print('FileBameResource initialized')
+        filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                'fixtures/AKR_brain_test.bam')
+        print('filename set for FileBamResource', filename)
 
 
 class ApiTestCase(TestCase):
@@ -97,7 +106,7 @@ class DasModelCalls(TestCase):
         self.assertEqual(resp.status_code, 200)
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(root.tag, 'SOURCES')
-        self.assertEqual(len(root), 3)
+        self.assertEqual(len(root), 4)
 
         # Check queries
         resp = self.client.get('/api/das/sources?version=36')
@@ -142,12 +151,17 @@ class DasFileSourcesTest(TestCase):
         pass
 
     def test_resource_top_level(self):
-        """
+        """ Test the top level response for a file resource
         """
         resp = self.client.get('/api/das/testbed/')
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(len(root), 1)
         # Add more checks to this
+
+        # BAM file check
+        resp = self.client.get('/api/das/testbam/')
+        root = lxml.etree.fromstring(resp.content)
+        self.assertEqual(len(root), 1)
 
 
     def test_feature_queries(self):
@@ -158,12 +172,29 @@ class DasFileSourcesTest(TestCase):
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 2)
 
+    
     def test_whole_segment_query(self):
         """ Test that a whole segment query returns the whole segment
         """
         resp = self.client.get('/api/das/testbed/features?segment=chr1')
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 3)
+
+    
+    def test_bam_feature_queries(self):
+        """ Test BAM feature queries
+        """
+        print("Testing Bam_features")
+        
+        resp =\
+                self.client.get(
+                        '/api/das/testbam/features?segment=chr7:3299628,3300000')
+        segments = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertEqual(len(segments), 3)
+        print(resp)
+        
+        
+
 
 
 

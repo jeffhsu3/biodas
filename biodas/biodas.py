@@ -12,7 +12,7 @@ from forms import DASSourcesForm
 
 
 class DAS(Api):
-    """ Container for a Das Server
+    """ Container for a Das Server.  
     """
 
     def __init__(self, api_name="das", version = '1.6'):

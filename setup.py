@@ -26,16 +26,16 @@ metadata = {'name':name,
             'ext_modules': ext_modules,
             'description':'biodas',
             'author':'Jeffrey Hsu',
-            'packages':['biodas'],
+            'packages':['biodas', 'biodas.utils'],
             'requires':[
                 'lxml',
                 'django',
-                'tastypie',
+                #'django\-tastypie',
                 ],
             'install_requires':[
                 'lxml',
                 'django',
-                'tastypie',
+                #'django-tastypie',
                 ],
 }
 

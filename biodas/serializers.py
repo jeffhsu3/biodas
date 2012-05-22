@@ -72,7 +72,7 @@ def top_level_serializer(resources, options=None):
 
 
 def feature_serializer(request, bundle, **kwargs):
-    """ Serialize a list of feature.  
+    """ Serialize a list of features.  
     """
 
     # Remember all values for xml attributes must be strings!
@@ -90,11 +90,12 @@ def feature_serializer(request, bundle, **kwargs):
         # :TODO deal with feature types
         feat_dict  = feature_attributes(i)
         feature = Element("FEATURE", feat_dict) 
-        segment.append(feature)
+        segment.append( feature )
         f_type = Element("TYPE", id = "900", category = "Don't get", 
                 cvID = "SO:1234")
         f_type.text = 'Read'
-        feature.append(f_type)
+        feature.append( f_type )
+        
         # Hmm need to do something about methods
         method = Element("METHOD")
         method.text = 'HTS'

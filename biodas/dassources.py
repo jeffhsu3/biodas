@@ -27,6 +27,7 @@ class DasResourceOptions(ResourceOptions):
     """ Provides Human defaults for the metadata.  User really needs to set
     these however.   
     """
+
     capability = "feature"
     chr_type = "Chromosome"
     authority = "GRCh"
@@ -63,9 +64,10 @@ class DasFileMetaclass(DeclarativeMetaclass):
         filetype = getattr(new_class._meta, "filetype", None)
         
         if not filetype or filetype == '' and name != 'DasResource':
+            global FILETYPES
             try:
                 extension = filename.split(".")[1]
-                if extension in DasFileMetaclass.FILETYPES.keys():
+                if extension in FILETYPES:
                     filetype = extension
                     setattr(new_class._meta, "filetype", filetype)
                 else:
@@ -188,6 +190,9 @@ class DasModelResource(ModelResource):
             # For when the query is 'chr1'
             reference = reference
         self.is_authenticated(request)
+
+        # Check if there is a binning scheme.  Assume it follows the
+        # UCSC binning scheme.
         
         try:
             if start:
@@ -216,7 +221,7 @@ class DasModelResource(ModelResource):
 
 class BaseResult(object):
     """ Construct an object similar to Django's ORM for universal input into
-    the serializer. p
+    the serializer. 
 
     :TODO Probably too much overhead to make a python object.  However allows
     generalization.  
@@ -305,19 +310,79 @@ class DasResource(DasBaseResource):
 
         return hits
 
+
     def bam_query(self, **kwargs):
+        """ :TODO implement a python only bam ready for pypy 
+        """
+        BAM_HEADERS = [
+                'query_id','flag', 'reference', 'start',
+                'mapq', 'cigar', 'temp', 'temp1', 'temp2', 'seq',
+                'baseq'
+                ]
+        print('bam_query')
         try:
             import pysam
         except ImportError:
+            print("Can't find pysam")
             raise ImportError('Handling of bam files requires pysam')
-        raise NotImplementedError()
+
+        try:
+            file_handle = pysam.Samfile(self._meta.filename, 'rb')
+        except IOError:
+            raise IOError('Could not find bam file')
+
+        hits = []
+
+        reads = file_handle.fetch(
+                kwargs['id'], 
+                kwargs['start'], 
+                kwargs['stop'])
+        
+        for read in reads:
+            hit = {
+                    'reference': file_handle.getrname(read.tid),
+                    'start': read.pos,
+                    'end': read.pos + read.qlen, 
+                    'name': read.qname,
+                    }
+            hits.append(BaseResult(hit))
+
+        return( hits )
+
+            
+
+
 
     
     def fa_query(self, **kwargs):
+        """ Handle 2-bit queries as well 
+        """
         raise NotImplementedError()
    
     
     def vcf_query(self, **kwargs):
+        """ VCF file needs to be a tabix indexed file
+        """
+        try:
+            import pysam
+        except ImportError:
+            print("Can't find pysam")
+            raise ImportError('Handling of bam files requires pysam')
+
+        try:
+            file_handle = pysam.Tabix(self._meta.filename, 'rb')
+        except IOError:
+            raise IOError('Could not find bam file')
+
+        reads = file_handle.fetch(
+                kwargs['id'], 
+                kwargs['start'], 
+                kwargs['stop'])
+
+        hits = dict(**reads)
+        print("hits")
+        
+        
         raise NotImplementedError()
 
 
@@ -326,8 +391,14 @@ class DasResource(DasBaseResource):
 
     
     def bw_query(self, **kwargs):
+        """ Handler for bigwig files.
+        """
         raise NotImplementedError()
 
     
     def bb_query(self, **kwargs):
+        raise NotImplementedError()
+
+
+    def tbx_query(self, **kwargs):
         raise NotImplementedError()
