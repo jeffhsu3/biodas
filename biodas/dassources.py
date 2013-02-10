@@ -332,9 +332,11 @@ class DasResource(DasBaseResource):
             raise IOError('Could not find bam file')
 
         hits = []
+        print(kwargs['id'])
+        ref_id = str(kwargs['id'])
 
         reads = file_handle.fetch(
-                kwargs['id'], 
+                ref_id , 
                 kwargs['start'], 
                 kwargs['stop'])
         
