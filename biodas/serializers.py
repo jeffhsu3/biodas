@@ -2,7 +2,7 @@
 """
 
 from lxml.etree import Element, tostring
-
+import json
 
 def get_type(feat_obj):
     """ Attempt to get the type of a feature if it exists.
@@ -71,46 +71,48 @@ def top_level_serializer(resources, options=None):
                     pretty_print = True))
 
 
-def feature_serializer(request, bundle, **kwargs):
+def feature_serializer(request, bundle, json=False, **kwargs):
     """ Serialize a list of features.  
     """
+    if json == False:
+        # Remember all values for xml attributes must be strings!
+        dasgff = Element('DASGFF')
+        das = Element('GFF', href = request.path + '?' +\
+                request.META['QUERY_STRING'])
+        dasgff.append(das)
+        seg_query = dict(((key, str(value)) for key, value in kwargs.items() if\
+                value))
+        segment = Element('SEGMENT', seg_query)
+        das.append(segment)
 
-    # Remember all values for xml attributes must be strings!
-    dasgff = Element('DASGFF')
-    das = Element('GFF', href = request.path + '?' +\
-            request.META['QUERY_STRING'])
-    dasgff.append(das)
-    seg_query = dict(((key, str(value)) for key, value in kwargs.items() if\
-            value))
-    segment = Element('SEGMENT', seg_query)
-    das.append(segment)
 
+        for i in bundle:
+            # :TODO deal with feature types
+            feat_dict  = feature_attributes(i)
+            feature = Element("FEATURE", feat_dict) 
+            segment.append( feature )
+            f_type = Element("TYPE", id = "900", category = "Don't get", 
+                    cvID = "SO:1234")
+            f_type.text = 'Read'
+            feature.append( f_type )
+            
+            # Hmm need to do something about methods
+            method = Element("METHOD")
+            method.text = 'HTS'
+            feature.append(method)
 
-    for i in bundle:
-        # :TODO deal with feature types
-        feat_dict  = feature_attributes(i)
-        feature = Element("FEATURE", feat_dict) 
-        segment.append( feature )
-        f_type = Element("TYPE", id = "900", category = "Don't get", 
-                cvID = "SO:1234")
-        f_type.text = 'Read'
-        feature.append( f_type )
-        
-        # Hmm need to do something about methods
-        method = Element("METHOD")
-        method.text = 'HTS'
-        feature.append(method)
-
-        # Optional Elements
-        opts = ["start", "end", "score", "orientation", "phase", "group",
-        "parent", "target"]
-        for opt in opts:
-            value = getattr(i, opt, None)
-            if value:
-                opt_element = Element(opt.upper())
-                opt_element.text = str(value)
-                feature.append(opt_element)
-            else: pass
-        
-    return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
-        pretty_print=True))
+            # Optional Elements
+            opts = ["start", "end", "score", "orientation", "phase", "group",
+            "parent", "target"]
+            for opt in opts:
+                value = getattr(i, opt, None)
+                if value:
+                    opt_element = Element(opt.upper())
+                    opt_element.text = str(value)
+                    feature.append(opt_element)
+                else: pass
+            
+        return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
+            pretty_print=True))
+    else:
+        return json.dump(bundle)
