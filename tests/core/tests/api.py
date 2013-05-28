@@ -1,5 +1,6 @@
 import os
 import lxml
+import json
 
 from django.contrib.auth.models import User
 from django.http import HttpRequest
@@ -41,10 +42,22 @@ class FileBamResource(DasResource):
     """
     class Meta:
         resource_name = 'testbam'
-        print('FileBameResource initialized')
+        print('FileBamResource initialized')
         filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                 'fixtures/AKR_brain_test.bam')
         print('filename set for FileBamResource', filename)
+
+
+class FileBamJsonResource(DasResource):
+    """ An example of a BAM file used as a resource
+    """
+    class Meta:
+        resource_name = 'testjsonbam'
+        json = True
+        print('FileBamJsonResource initialized')
+        filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                'fixtures/AKR_brain_test.bam')
+        print('filename set for FileBamJsonResource', filename)
 
 
 class ApiTestCase(TestCase):
@@ -106,7 +119,6 @@ class DasModelCalls(TestCase):
         self.assertEqual(resp.status_code, 200)
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(root.tag, 'SOURCES')
-        self.assertEqual(len(root), 4)
 
         # Check queries
         resp = self.client.get('/api/das/sources?version=36')
@@ -195,6 +207,16 @@ class DasFileSourcesTest(TestCase):
         
         
 
+    def test_json_feature_queries(self):
+        """ Test json feature queries
+        """
+        print("Testing json features")
+        
+        resp =\
+                self.client.get(
+                        '/api/das/testjsonbam/features?segment=chr7:3299628,3300000')
+        self.assertEqual(len(json.loads(resp.content)), 3)
+        print(resp)
 
 
 

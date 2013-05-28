@@ -212,7 +212,10 @@ class DasModelResource(ModelResource):
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
         '''
-        content = feature_serializer(request, base_object_list, json = getattr(self._meta , 'json'), **query_seg)
+        try:
+            content = feature_serializer(request, base_object_list, format_json = getattr(self._meta , 'json'), **query_seg)
+        except:
+            content = feature_serializer(request, base_object_list, **query_seg)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
@@ -272,7 +275,10 @@ class DasResource(DasBaseResource):
                     filetype %s" % self._meta.filetyp)
         
         #:TODO implement json return as well.        
-        content = feature_serializer(request, hits, json = getattr(self._meta , 'json'), **query_seg) 
+        try:
+            content = feature_serializer(request, hits, format_json = getattr(self._meta , 'json'), **query_seg) 
+        except:
+            content = feature_serializer(request, hits, **query_seg) 
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
@@ -334,9 +340,9 @@ class DasResource(DasBaseResource):
         hits = []
 
         reads = file_handle.fetch(
-                kwargs['id'], 
-                kwargs['start'], 
-                kwargs['stop'])
+                str(kwargs['id']), 
+                int(kwargs['start']), 
+                int(kwargs['stop']))
         
         for read in reads:
             hit = {

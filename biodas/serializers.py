@@ -71,10 +71,10 @@ def top_level_serializer(resources, options=None):
                     pretty_print = True))
 
 
-def feature_serializer(request, bundle, json=False, **kwargs):
+def feature_serializer(request, bundle, format_json=False, **kwargs):
     """ Serialize a list of features.  
     """
-    if json == False:
+    if format_json == False:
         # Remember all values for xml attributes must be strings!
         dasgff = Element('DASGFF')
         das = Element('GFF', href = request.path + '?' +\
@@ -115,4 +115,4 @@ def feature_serializer(request, bundle, json=False, **kwargs):
         return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
             pretty_print=True))
     else:
-        return json.dump(bundle)
+        return json.dumps([feature_attributes(b) for b in bundle])
