@@ -77,8 +77,9 @@ You can also generate a reference server in addition to a feature server.
 JSON based responses
 ~~~~~~~~~~~~~~~~~~~~
 Although the xml response is the default response for biodas servers, biodas
-has the option to return JSON responses.  The specification for the JSON
-response can be found :TODO 
+has the option to return JSON responses.  To serialize features in json, simply
+set json to True in the meta file.  The specification for the JSON response can
+be found :TODO 
 
 
 Registering the server with the DAS registry

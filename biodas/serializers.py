@@ -2,7 +2,7 @@
 """
 
 from lxml.etree import Element, tostring
-
+import json
 
 def get_type(feat_obj):
     """ Attempt to get the type of a feature if it exists.
@@ -38,7 +38,7 @@ def top_level_serializer(resources, options=None):
     """
 
     if options:
-        print(options)
+        pass
 
     sources = Element('SOURCES')
     for name, resource in resources.items():
@@ -64,55 +64,10 @@ def top_level_serializer(resources, options=None):
         version.append(Element('CAPABILITIES', type="das1:command",
                               query_uri="URL"))
         version.append(Element('PROP', name='key', value="value"))
-
-
         coordinate.text = 'hg19'
 
     return(tostring(sources, xml_declaration = True, encoding ='utf-8',
                     pretty_print = True))
-
-
-def feature_serializer(request, bundle, **kwargs):
-    """ Serialize a list of features.
-    """
-
-    # Remember all values for xml attributes must be strings!
-    dasgff = Element('DASGFF')
-    das = Element('GFF', href = request.path + '?' +\
-            request.META['QUERY_STRING'])
-    dasgff.append(das)
-    seg_query = dict(((key, str(value)) for key, value in kwargs.items() if\
-            value))
-    segment = Element('SEGMENT', seg_query)
-    das.append(segment)
-
-
-    for i in bundle:
-        # :TODO deal with feature types
-        feat_dict  = feature_attributes(i)
-        feature = Element("FEATURE", feat_dict) 
-        segment.append( feature )
-        f_type = Element("TYPE", id = "900", category = "Read",
-                cvID = "SO:1234")
-        f_type.text = 'Read'
-        feature.append( f_type )
-        # Hmm need to do something about methods
-        method = Element("METHOD")
-        method.text = 'HTS'
-        feature.append(method)
-
-        # Optional Elements
-        opts = ["start", "end", "score", "orientation", "phase", "group",
-        "parent", "target"]
-        for opt in opts:
-            value = getattr(i, opt, None)
-            if value:
-                opt_element = Element(opt.upper())
-                opt_element.text = str(value)
-                feature.append(opt_element)
-            else: pass
-    return(tostring(dasgff, xml_declaration = True, encoding='utf-8',
-        pretty_print=True))
 
 
 def stylesheet_serializer(request):
@@ -127,7 +82,7 @@ def stylesheet_serializer(request):
 
 
 def bam_stylesheet(request):
-    """ This needs to be cleaned up
+    """ This is an atrocity
     """
     dasstyle = Element("DASSTYLE")
     stylesheet = Element("STYLESHEET")
@@ -183,7 +138,6 @@ def bam_stylesheet(request):
 
 def type_serializer(request):
     dastypes = Element("DASTYPES")
-    print(request)
     gff = Element("GFF", url=request.path)
     # Defaults to over all regions if no id is povided
     segment = Element("SEGMENT")
@@ -193,3 +147,49 @@ def type_serializer(request):
     segment.append(_type)
     return(tostring(dastypes, xml_declaration = True, encoding='utf-8',
         pretty_print=True))
+
+def feature_serializer(request, bundle, format_json=False, **kwargs):
+    """ Serialize a list of features.  
+    """
+    if format_json == False:
+        # Remember all values for xml attributes must be strings!
+        dasgff = Element('DASGFF')
+        das = Element('GFF', href = request.path + '?' +\
+                request.META['QUERY_STRING'])
+        dasgff.append(das)
+        seg_query = dict(((key, str(value)) for key, value in kwargs.items() if\
+                value))
+        segment = Element('SEGMENT', seg_query)
+        das.append(segment)
+
+
+        for i in bundle:
+            # :TODO deal with feature types
+            feat_dict  = feature_attributes(i)
+            feature = Element("FEATURE", feat_dict) 
+            segment.append( feature )
+            f_type = Element("TYPE", id = "900", category = "Don't get", 
+                    cvID = "SO:1234")
+            f_type.text = 'Read'
+            feature.append( f_type )
+            
+            # Hmm need to do something about methods
+            method = Element("METHOD")
+            method.text = 'HTS'
+            feature.append(method)
+
+            # Optional Elements
+            opts = ["start", "end", "score", "orientation", "phase", "group",
+            "parent", "target"]
+            for opt in opts:
+                value = getattr(i, opt, None)
+                if value:
+                    opt_element = Element(opt.upper())
+                    opt_element.text = str(value)
+                    feature.append(opt_element)
+                else: pass
+            
+        return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
+            pretty_print=True))
+    else:
+        return json.dumps([feature_attributes(b) for b in bundle])

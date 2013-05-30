@@ -1,5 +1,7 @@
-import os
+import os, subprocess
 import lxml
+import json
+import pysam
 
 from django.contrib.auth.models import User
 from django.http import HttpRequest
@@ -41,10 +43,18 @@ class FileBamResource(DasResource):
     """
     class Meta:
         resource_name = 'testbam'
-        print('FileBameResource initialized')
         filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                 'fixtures/AKR_brain_test.bam')
-        print('filename set for FileBamResource', filename)
+
+
+class FileBamJsonResource(DasResource):
+    """ An example of a BAM file used as a resource
+    """
+    class Meta:
+        resource_name = 'testjsonbam'
+        json = True
+        filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                'fixtures/AKR_brain_test.bam')
 
 
 class ApiTestCase(TestCase):
@@ -106,7 +116,6 @@ class DasModelCalls(TestCase):
         self.assertEqual(resp.status_code, 200)
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(root.tag, 'SOURCES')
-        self.assertEqual(len(root), 4)
 
         # Check queries
         resp = self.client.get('/api/das/sources?version=36')
@@ -148,7 +157,8 @@ class DasModelCalls(TestCase):
 
 class DasFileSourcesTest(TestCase):
     def setUp(self):
-        pass
+        self.fh = pysam.Samfile(os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                'fixtures/AKR_brain_test.bam'))
 
     def test_resource_top_level(self):
         """ Test the top level response for a file resource
@@ -184,17 +194,26 @@ class DasFileSourcesTest(TestCase):
     def test_bam_feature_queries(self):
         """ Test BAM feature queries
         """
-        print("Testing Bam_features")
         resp =\
                 self.client.get(
                         '/api/das/testbam/features?segment=chr7:3299628,3300000')
-        print(resp)
-        #segments = lxml.etree.fromstring(resp.content)[0][0]
-        #self.assertEqual(len(segments), 3)
-        print(resp)
+        segments = lxml.etree.fromstring(resp.content)[0][0]
+        counter = 0
+        reads = self.fh.fetch('chr7', 3299628, 3300000)
+        for i in reads:
+            counter += 1
+        self.assertEqual(len(segments), counter)
         
         
 
+    def test_json_feature_queries(self):
+        """ Test json feature queries
+        """
+        
+        resp =\
+                self.client.get(
+                        '/api/das/testjsonbam/features?segment=chr7:3299628,3300000')
+        self.assertEqual(len(json.loads(resp.content)), 3)
 
 
 

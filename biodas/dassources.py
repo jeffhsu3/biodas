@@ -35,7 +35,7 @@ class DasResourceOptions(ResourceOptions):
 
     filename = 'placeholder.bed'
     queryfunc = ''
-    ref_prefix = 'chr'
+    ref_prefix = ''
     # Make it easy to specify a custom query function
     filetype = None
 
@@ -235,7 +235,10 @@ class DasModelResource(ModelResource):
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
         '''
-        content = feature_serializer(request, base_object_list, **query_seg)
+        try:
+            content = feature_serializer(request, base_object_list, format_json = getattr(self._meta , 'json'), **query_seg)
+        except:
+            content = feature_serializer(request, base_object_list, **query_seg)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
@@ -259,7 +262,7 @@ class BaseResult(object):
 
 
 def generate_bed_dict(line, bed_header):
-    """ Generate a dictionar with the default bed header labels as keys and
+    """ Generate a dictionary with the default bed header labels as keys and
     attributes as values.
     """
     out_dict = dict((key, value) for key, value in izip(bed_header, line))
@@ -295,8 +298,10 @@ class DasResource(DasBaseResource):
             raise NotImplementedError("No query function implemented for\
                     filetype %s" % self._meta.filetype)
 
-        #:TODO implement json return as well.        
-        content = feature_serializer(request, hits, **query_seg)
+        try:
+            content = feature_serializer(request, hits, format_json = getattr(self._meta , 'json'), **query_seg) 
+        except:
+            content = feature_serializer(request, hits, **query_seg) 
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
@@ -358,10 +363,10 @@ class DasResource(DasBaseResource):
         ref_id = str(kwargs['id'])
 
         reads = file_handle.fetch(
-                ref_id ,
-                kwargs['start'],
-                kwargs['stop'])
-
+                str(kwargs['id']), 
+                int(kwargs['start']), 
+                int(kwargs['stop']))
+        
         for read in reads:
             hit = {
                     'reference': file_handle.getrname(read.tid),
