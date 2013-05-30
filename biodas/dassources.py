@@ -5,15 +5,15 @@ from itertools import izip
 from django.conf.urls.defaults import url
 from django.http import HttpResponse
 from django.db.models import Q
-from tastypie.resources import (Resource, ModelResource, 
+from tastypie.resources import (Resource, ModelResource,
                                 DeclarativeMetaclass, ResourceOptions,
                                 ModelDeclarativeMetaclass)
 
 from utils import parse_das_segment, add_das_headers
-import serializers 
-from serializers import feature_serializer
+import serializers
+from serializers import feature_serializer, stylesheet_serializer
 
-FILETYPES = { 
+FILETYPES = {
         'bam': 'bam_query',
         'bed': 'bed_query',
         'bb': 'bigbed_query',
@@ -25,22 +25,23 @@ FILETYPES = {
 
 class DasResourceOptions(ResourceOptions):
     """ Provides Human defaults for the metadata.  User really needs to set
-    these however.   
+    these however.
     """
 
     capability = "feature"
     chr_type = "Chromosome"
     authority = "GRCh"
     version = 37
-    
-    filename = 'placeholder.bed' 
+
+    filename = 'placeholder.bed'
     queryfunc = ''
+    ref_prefix = 'chr'
     # Make it easy to specify a custom query function
     filetype = None
 
 
 class DasFileMetaclass(DeclarativeMetaclass):
-    FILETYPES = { 
+    FILETYPES = {
             'bam': 'bam_query',
             'bed': 'bed_query',
             'bb': 'bigbed_query',
@@ -49,7 +50,7 @@ class DasFileMetaclass(DeclarativeMetaclass):
             'vcf': 'vcf_query',
             'fa': 'fa_query',
             }
-    
+
     def __new__(cls, name, bases, attrs):
         """ This gets called both on resource class and on the user generated
         inherited classes.  Unfortunately that means that filetype is set
@@ -62,7 +63,7 @@ class DasFileMetaclass(DeclarativeMetaclass):
         # Note that ResourceOptions and DasResourceOptions both get called.
         filename = getattr(new_class._meta, "filename")
         filetype = getattr(new_class._meta, "filetype", None)
-        
+
         if not filetype or filetype == '' and name != 'DasResource':
             global FILETYPES
             try:
@@ -83,7 +84,7 @@ class DasFileMetaclass(DeclarativeMetaclass):
 
 class DasModelMetaclass(ModelDeclarativeMetaclass):
     def __new__(cls, name, bases, attrs):
-            
+
         new_class = super(DasModelMetaclass, cls).__new__(cls, name, bases,
                 attrs)
 
@@ -97,17 +98,31 @@ class DasBaseResource(Resource):
     """ A Base Class for DAS resources.  Use DasModelResource or
     DasFileResource.
     """
-    
-    
+
+
     def override_urls(self):
 
         return [
             url(r"^(?P<resource_name>%s)/features" %
                 (self._meta.resource_name), self.wrap_view('get_features'),
                 name = 'api_get_features'),
+            url(r"^(?P<resource_name>%s)/stylesheet" %
+                (self._meta.resource_name), self.wrap_view('get_stylesheet'),
+                name = 'api_get_stylesheet'),
+            url(r"^(?P<resource_name>%s)/types" %
+                (self._meta.resource_name), self.wrap_view('get_types'),
+                name = 'api_get_types'),
         ]
 
-    
+    def get_stylesheet(self, request, **kwargs):
+        registry = {getattr(self._meta , 'resource_name'): self}
+        content = serializers.bam_stylesheet(request)
+        response = HttpResponse(
+                content = content,
+                content_type = 'application/xml')
+        response = add_das_headers(response)
+        return response
+
     def get_list(self, request, **kwargs):
         """ Replaces the standard resource response with the sources one.
         """
@@ -118,6 +133,15 @@ class DasBaseResource(Resource):
         response = HttpResponse(
             content = content,
             content_type = 'application/xml')
+        response = add_das_headers(response)
+        return response
+
+    def get_types(self, request, **kwargs):
+        registry = {getattr(self._meta , 'resource_name'): self}
+        content = serializers.type_serializer(request)
+        response = HttpResponse(
+                content = content,
+                content_type = 'application/xml')
         response = add_das_headers(response)
         return response
 
@@ -164,14 +188,14 @@ class DasModelResource(ModelResource):
 
 
     def get_features(self, request, **kwargs):
-        """ Returns a DAS GFF xml.  
+        """ Returns a DAS GFF xml.
 
         Calls ''obj_get'' to fetch only the objects requested.  This method
-        only responds to HTTP GET.  
+        only responds to HTTP GET.
 
         Similar to obj_get_list in ModelResource with modifications.  Need to
         make this a factory so that specific fields and be mapped to the
-        segment and start end.  
+        segment and start end.
         """
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
@@ -193,12 +217,11 @@ class DasModelResource(ModelResource):
 
         # Check if there is a binning scheme.  Assume it follows the
         # UCSC binning scheme.
-        
         try:
             if start:
                 base_object_list = self.get_object_list(request).filter(
-                        Q(start__range=(start,stop)) |\
-                        Q(end__range=(start,stop)), 
+                        Q(start__range=(start, stop)) |\
+                        Q(end__range=(start, stop)),
                         chrom__exact = reference)
             else:
                 base_object_list = self.get_object_list(request).filter(
@@ -221,10 +244,10 @@ class DasModelResource(ModelResource):
 
 class BaseResult(object):
     """ Construct an object similar to Django's ORM for universal input into
-    the serializer. 
+    the serializer.
 
     :TODO Probably too much overhead to make a python object.  However allows
-    generalization.  
+    generalization.
     """
 
     def __init__(self, *initial_data, **kwargs):
@@ -237,7 +260,7 @@ class BaseResult(object):
 
 def generate_bed_dict(line, bed_header):
     """ Generate a dictionar with the default bed header labels as keys and
-    attributes as values.  
+    attributes as values.
     """
     out_dict = dict((key, value) for key, value in izip(bed_header, line))
     return(out_dict)
@@ -247,32 +270,33 @@ class DasResource(DasBaseResource):
     """ A class to handle file formats
     """
     __metaclass__ = DasFileMetaclass
-    
-    
+
+
     def get_features(self, request, **kwargs):
-        """ Returns a DAS GFF xml.  
+        """ Returns a DAS GFF xml.
 
         Calls ''obj_get'' to fetch only the objects requested.  This method
-        only responds to HTTP GET.  
+        only responds to HTTP GET.
 
         Similar to obj_get_list in ModelResource with modifications.  Need to
-        make this a factory so that specific fields and be mapped to the
-        segment and start end.  
+        make this a factory so that specific fields can be mapped to the
+        segment and start end.
         """
-        
+
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
-        query_seg = {'id': reference, 'start':start, 'stop':stop}
-        
+        query_seg = {'id': self._meta.ref_prefix + reference, 'start':start, 'stop':stop}
+
+
         query_method = getattr(self, "%s_query" % self._meta.filetype,  None)
         if query_method:
             hits = query_method(**query_seg)
         else:
             raise NotImplementedError("No query function implemented for\
-                    filetype %s" % self._meta.filetyp)
-        
+                    filetype %s" % self._meta.filetype)
+
         #:TODO implement json return as well.        
-        content = feature_serializer(request, hits, **query_seg) 
+        content = feature_serializer(request, hits, **query_seg)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
@@ -281,7 +305,7 @@ class DasResource(DasBaseResource):
 
     def bed_query(self, **kwargs):
         ''' Returns a list of hits.
-        
+
         This is for unindexed files, and should only be used if the BED file
         is very small.
         '''
@@ -294,7 +318,7 @@ class DasResource(DasBaseResource):
         'strand','thickstart', 'thickend', 'itemRgb', 'blockcount',
         'blocksizes', 'blockstarts']
         # :TODO deal with file comments
-        
+
         for line in file_handle:
             line = line.rstrip("\n").split("\t")
             if line[0] == str(kwargs['id']):
@@ -306,20 +330,19 @@ class DasResource(DasBaseResource):
                     hit = generate_bed_dict(line, BED_HEADERS)
                     hits.append(BaseResult(hit))
                 else: pass
-            else: pass 
+            else: pass
 
         return hits
 
 
     def bam_query(self, **kwargs):
-        """ :TODO implement a python only bam ready for pypy 
+        """ :TODO implement a python only bam ready for pypy
         """
         BAM_HEADERS = [
                 'query_id','flag', 'reference', 'start',
                 'mapq', 'cigar', 'temp', 'temp1', 'temp2', 'seq',
                 'baseq'
                 ]
-        print('bam_query')
         try:
             import pysam
         except ImportError:
@@ -332,36 +355,30 @@ class DasResource(DasBaseResource):
             raise IOError('Could not find bam file')
 
         hits = []
-        print(kwargs['id'])
         ref_id = str(kwargs['id'])
 
         reads = file_handle.fetch(
-                ref_id , 
-                kwargs['start'], 
+                ref_id ,
+                kwargs['start'],
                 kwargs['stop'])
-        
+
         for read in reads:
             hit = {
                     'reference': file_handle.getrname(read.tid),
                     'start': read.pos,
-                    'end': read.pos + read.qlen, 
+                    'end': read.pos + read.qlen,
                     'name': read.qname,
                     }
             hits.append(BaseResult(hit))
 
         return( hits )
 
-            
-
-
-
-    
     def fa_query(self, **kwargs):
-        """ Handle 2-bit queries as well 
+        """ Handle 2-bit queries as well
         """
         raise NotImplementedError()
-   
-    
+
+
     def vcf_query(self, **kwargs):
         """ VCF file needs to be a tabix indexed file
         """
@@ -377,27 +394,27 @@ class DasResource(DasBaseResource):
             raise IOError('Could not find bam file')
 
         reads = file_handle.fetch(
-                kwargs['id'], 
-                kwargs['start'], 
+                kwargs['id'],
+                kwargs['start'],
                 kwargs['stop'])
 
         hits = dict(**reads)
         print("hits")
-        
-        
+
+
         raise NotImplementedError()
 
 
     def gff_query(self, **kwargs):
         raise NotImplementedError()
 
-    
+
     def bw_query(self, **kwargs):
         """ Handler for bigwig files.
         """
         raise NotImplementedError()
 
-    
+
     def bb_query(self, **kwargs):
         raise NotImplementedError()
 

@@ -7,7 +7,7 @@ from lxml.etree import Element, tostring
 def get_type(feat_obj):
     """ Attempt to get the type of a feature if it exists.
     """
-    
+
     pass
 
 
@@ -16,7 +16,7 @@ def feature_attributes(feat_obj):
     """
     FEAT_LABELS = ['id', 'pk']
     pos_labels = ['name', 'label', 'gene']
-    
+
     for pk in FEAT_LABELS:
         feat_id = getattr(feat_obj, pk, None)
         if feat_id:
@@ -26,23 +26,24 @@ def feature_attributes(feat_obj):
         label = getattr(feat_obj, name, None)
         if label:
             break
-    
+
     attr_dict = dict((key, str(value)) for key, value\
             in zip(['id','label'], [feat_id, label])\
-            if value) 
+            if value)
     return(attr_dict)
 
 
 def top_level_serializer(resources, options=None):
     """ Serializes the top-level query
     """
-    
+
     if options:
         print(options)
-    
+
     sources = Element('SOURCES')
     for name, resource in resources.items():
-        source = Element('SOURCE', uri = name)
+        source = Element('SOURCE', uri = name, title="test",
+                         description='test')
         sources.append(source)
         email = getattr(resource._meta, 'email', 'NA')
         source.append(Element('MAINTAINER', email = email))
@@ -50,17 +51,17 @@ def top_level_serializer(resources, options=None):
         source.append(version)
 
         # :TODO Coordinate uri needs to be gotton somehow easily and automatically 
-        coordinate = Element('COORDINATES', 
-                uri = 'uri', 
+        coordinate = Element('COORDINATES',
+                uri = 'uri',
                 source ='data type',
-                authority = 'temp', 
+                authority = 'temp',
                 taxid = 'taxonomy',
-                version='version', 
+                version='version',
                 test_range='id:start,stop'
                 )
-        
+
         version.append(coordinate)
-        version.append(Element('CAPABILITIES', type="das1:command", 
+        version.append(Element('CAPABILITIES', type="das1:command",
                               query_uri="URL"))
         version.append(Element('PROP', name='key', value="value"))
 
@@ -72,7 +73,7 @@ def top_level_serializer(resources, options=None):
 
 
 def feature_serializer(request, bundle, **kwargs):
-    """ Serialize a list of features.  
+    """ Serialize a list of features.
     """
 
     # Remember all values for xml attributes must be strings!
@@ -91,11 +92,10 @@ def feature_serializer(request, bundle, **kwargs):
         feat_dict  = feature_attributes(i)
         feature = Element("FEATURE", feat_dict) 
         segment.append( feature )
-        f_type = Element("TYPE", id = "900", category = "Don't get", 
+        f_type = Element("TYPE", id = "900", category = "Read",
                 cvID = "SO:1234")
         f_type.text = 'Read'
         feature.append( f_type )
-        
         # Hmm need to do something about methods
         method = Element("METHOD")
         method.text = 'HTS'
@@ -111,6 +111,85 @@ def feature_serializer(request, bundle, **kwargs):
                 opt_element.text = str(value)
                 feature.append(opt_element)
             else: pass
-        
-    return(tostring(dasgff, xml_declaration = True, encoding ='utf-8',
+    return(tostring(dasgff, xml_declaration = True, encoding='utf-8',
+        pretty_print=True))
+
+
+def stylesheet_serializer(request):
+    dasstyle = Element("DASSTYLE")
+    stylesheet = Element("STYLESHEET")
+    dasstyle.append(stylesheet)
+    category = Element("CATEGORY", id="default")
+    dasttype = Element("TYPE", id="default")
+    stylesheet.append(category)
+    return(tostring(dasstyle, xml_declaration = True, encoding='utf-8',
+        pretty_print=True))
+
+
+def bam_stylesheet(request):
+    """ This needs to be cleaned up
+    """
+    dasstyle = Element("DASSTYLE")
+    stylesheet = Element("STYLESHEET")
+    dasstyle.append(stylesheet)
+
+    category = Element("CATEGORY", id="default")
+    stylesheet.append(category)
+    dasttype = Element("TYPE", id="default")
+    glyph = Element("GLYPH", zoom='low')
+    histogram = Element("HISTOGRAM")
+    stylesheet.append(category)
+    category.append(dasttype)
+    dasttype.append(glyph)
+    glyph.append(histogram)
+    color1 = Element("COLOR1")
+    color1.text = "black"
+    color2 = Element("COLOR2")
+    color2.text = "red"
+    height = Element("HEIGHT")
+    height.text = "30"
+    glyph.append(color1)
+    glyph.append(color2)
+    glyph.append(height)
+    #read = Element("CATEGORY", id="read")
+    dasttype2 = Element("TYPE", id="default")
+    category.append(dasttype2)
+
+    glyph2 = Element("GLPYH", zoom='high')
+    dasttype2.append(glyph2)
+
+    boxglpyh = Element("BOX")
+    glyph2.append(boxglpyh)
+    fgcolor = Element('FGCOLOR')
+    fgcolor.text = 'black'
+    bgcolor = Element('BGCOLOR')
+    bgcolor.text = 'blue'
+    bump = Element('BUMP')
+    bump.text = 'yes'
+    zindex = Element('ZINDEX')
+    zindex.text = '20'
+    height2 = Element("HEIGHT")
+    height2.text = '30'
+    label = Element('LABEL')
+    label.text = 'no'
+    boxglpyh.append(height2)
+    boxglpyh.append(fgcolor)
+    boxglpyh.append(bgcolor)
+    boxglpyh.append(zindex)
+    boxglpyh.append(bump)
+    boxglpyh.append(label)
+    return(tostring(dasstyle, xml_declaration = True, encoding='utf-8',
+        pretty_print=True))
+
+def type_serializer(request):
+    dastypes = Element("DASTYPES")
+    print(request)
+    gff = Element("GFF", url=request.path)
+    # Defaults to over all regions if no id is povided
+    segment = Element("SEGMENT")
+    _type = Element("TYPE", id = str(0))
+    dastypes.append(gff)
+    gff.append(segment)
+    segment.append(_type)
+    return(tostring(dastypes, xml_declaration = True, encoding='utf-8',
         pretty_print=True))
