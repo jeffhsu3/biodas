@@ -8,7 +8,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from django.test.client import Client
 from tastypie.exceptions import NotRegistered, BadRequest
-from core.models import BedEntry, QTLEntry
+from core.models import BedEntry, QTLEntry, SNPEntry
 
 from biodas import DAS, DasModelResource, DasResource 
 
@@ -25,6 +25,11 @@ class QTLResource(DasModelResource):
         resource_name = 'qtl'
         queryset = QTLEntry.objects.all()
 
+class SNPResource(DasModelResource):
+    class Meta:
+        version = 37
+        resource_name = 'snps'
+        queryset = SNPEntry.objects.all()
 
 class FileBedResource(DasResource):
     """ An example of a BED file used as a resource.  
@@ -72,6 +77,10 @@ class ApiTestCase(TestCase):
         api.register(QTLResource())
         self.assertEqual(len(api._registry), 2)
 
+        api.register(SNPResource())
+        self.assertEqual(len(api._registry), 3)
+
+
     def test_top_level(self):
         api = DAS()
         api.register(BedResource())
@@ -81,14 +90,12 @@ class ApiTestCase(TestCase):
 
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
-        #print(resp.content)
-
-        # Testing Response Headers
         self.assertEqual(resp['X-DAS-Version'], 'DAS/1.6')
 
 
+
 class DasModelCalls(TestCase):
-    """ Test actual get responses
+    """ Test actual get responses from django models
     """
     urls = 'core.tests.api_urls'
 
@@ -108,6 +115,9 @@ class DasModelCalls(TestCase):
         self.bed = BedEntry(chrom = 1, start = 2000, end = 2600,
                                  gene="Testgene", strand = True)
         self.bed.save()
+        self.snp = SNPEntry(chrom = 7, start=116182054, end=116182054,
+        rsID="rs959173", kent_bin=1471, counts=30)
+        self.snp.save()
 
     def test_top_level(self):
         """ Test top level discovery query
@@ -121,9 +131,9 @@ class DasModelCalls(TestCase):
         resp = self.client.get('/api/das/sources?version=36')
         root = lxml.etree.fromstring(resp.content)
         self.assertEqual(len(root), 1)
-
         #resp = self.client.get('/api/das/sources?version=36?capabilit=1.5')
 
+    
     def test_resource_top_level(self):
         """ Test the top level for the resources
         """
@@ -153,6 +163,15 @@ class DasModelCalls(TestCase):
         resp = self.client.get('/api/das/bed/features?segment=1')
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 1)
+
+    def test_kent_binning(self):
+        """
+        """
+        resp =\
+        self.client.get('/api/das/snps/features?segment=7:116182053-116182055')
+        print(resp)
+        self.assertEqual(1, 1)
+    
 
 
 class DasFileSourcesTest(TestCase):
@@ -204,6 +223,11 @@ class DasFileSourcesTest(TestCase):
             counter += 1
         self.assertEqual(len(segments), counter)
         
+    
+    def test_stylesheet(self):
+        resp = self.client.get('/api/das/testbam/stylesheet/')
+        categories = lxml.etree.fromstring(resp.content)[0][0]
+        self.assertGreaterEqual(len(categories),1)
         
 
     def test_json_feature_queries(self):

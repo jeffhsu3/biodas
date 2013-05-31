@@ -36,7 +36,7 @@ class DasResourceOptions(ResourceOptions):
     filename = 'placeholder.bed'
     queryfunc = ''
     ref_prefix = ''
-    # Make it easy to specify a custom query function
+    # :TODO Make it easy to specify a custom query function
     filetype = None
 
 
@@ -99,7 +99,6 @@ class DasBaseResource(Resource):
     DasFileResource.
     """
 
-
     def override_urls(self):
 
         return [
@@ -114,13 +113,16 @@ class DasBaseResource(Resource):
                 name = 'api_get_types'),
         ]
 
+
     def get_stylesheet(self, request, **kwargs):
+        print("Get Stylesheet Called'")
         registry = {getattr(self._meta , 'resource_name'): self}
         content = serializers.bam_stylesheet(request)
         response = HttpResponse(
                 content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
+        print(content)
         return response
 
     def get_list(self, request, **kwargs):
@@ -137,6 +139,7 @@ class DasBaseResource(Resource):
         return response
 
     def get_types(self, request, **kwargs):
+        print('get types called')
         registry = {getattr(self._meta , 'resource_name'): self}
         content = serializers.type_serializer(request)
         response = HttpResponse(
@@ -148,7 +151,8 @@ class DasBaseResource(Resource):
     # Views
 
     def get_features(self, request, **kwargs):
-        """ Needs to be implemented at the user level
+        """ Needs to be implemented at the user level or altered by a child
+        class.
         """
         raise NotImplementedError()
 
@@ -200,23 +204,14 @@ class DasModelResource(ModelResource):
         if hasattr(request, 'GET'):
             reference, start, stop = parse_das_segment(request)
         query_seg = {'id': reference, 'start':start, 'stop':stop}
-        # Attempts to be smart about field mapping
-        # :TODO implement this
         if 'chrom' in self.fields:
             pass
-        # :TODO Need to implement type, category, feature_id and maxbins
-        # :TODO Check if model has a Kent bin.  Also benchmark using this overa
-        # standard index.
-        # :TODO make reference more general
         try:
             reference = int(reference)
         except ValueError:
-            # For when the query is 'chr1'
             reference = reference
+        print(reference, start, stop)
         self.is_authenticated(request)
-
-        # Check if there is a binning scheme.  Assume it follows the
-        # UCSC binning scheme.
         try:
             if start:
                 base_object_list = self.get_object_list(request).filter(
@@ -346,12 +341,11 @@ class DasResource(DasBaseResource):
         BAM_HEADERS = [
                 'query_id','flag', 'reference', 'start',
                 'mapq', 'cigar', 'temp', 'temp1', 'temp2', 'seq',
-                'baseq'
+                'bq'
                 ]
         try:
             import pysam
         except ImportError:
-            print("Can't find pysam")
             raise ImportError('Handling of bam files requires pysam')
 
         try:
@@ -363,7 +357,7 @@ class DasResource(DasBaseResource):
         ref_id = str(kwargs['id'])
 
         reads = file_handle.fetch(
-                str(kwargs['id']), 
+                ref_id , 
                 int(kwargs['start']), 
                 int(kwargs['stop']))
         
@@ -376,12 +370,19 @@ class DasResource(DasBaseResource):
                     }
             hits.append(BaseResult(hit))
 
-        return( hits )
+        return(hits)
 
     def fa_query(self, **kwargs):
         """ Handle 2-bit queries as well
         """
-        raise NotImplementedError()
+        try:
+            import twobitreader 
+        except ImportError:
+            raise ImportError('Handling of bam files requires pysam')
+        try:
+            file_handle = twobitreader.TwoBitFile(self._meta.filename, 'rb')
+        except IOError:
+            raise IOError('Could not find bam file')
 
 
     def vcf_query(self, **kwargs):
@@ -406,7 +407,6 @@ class DasResource(DasBaseResource):
         hits = dict(**reads)
         print("hits")
 
-
         raise NotImplementedError()
 
 
@@ -418,7 +418,6 @@ class DasResource(DasBaseResource):
         """ Handler for bigwig files.
         """
         raise NotImplementedError()
-
 
     def bb_query(self, **kwargs):
         raise NotImplementedError()

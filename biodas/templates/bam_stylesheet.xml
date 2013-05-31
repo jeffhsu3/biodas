@@ -1,0 +1,10 @@
+{% extends stylesheet_base.xml %}
+
+{% block categories %}
+<CATEGORY id="default">
+ <GLYPH zoom='low'>
+  <TYPE id="default">
+  </TYPE>
+ </GLYPH>
+</CATEGORY>
+{% endblock %}

@@ -7,7 +7,6 @@ import json
 def get_type(feat_obj):
     """ Attempt to get the type of a feature if it exists.
     """
-
     pass
 
 
@@ -28,8 +27,7 @@ def feature_attributes(feat_obj):
             break
 
     attr_dict = dict((key, str(value)) for key, value\
-            in zip(['id','label'], [feat_id, label])\
-            if value)
+            in zip(['id','label'], [feat_id, label]) if value)
     return(attr_dict)
 
 
@@ -82,12 +80,11 @@ def stylesheet_serializer(request):
 
 
 def bam_stylesheet(request):
-    """ This is an atrocity
+    """ Template this?
     """
     dasstyle = Element("DASSTYLE")
     stylesheet = Element("STYLESHEET")
     dasstyle.append(stylesheet)
-
     category = Element("CATEGORY", id="default")
     stylesheet.append(category)
     dasttype = Element("TYPE", id="default")
@@ -109,10 +106,8 @@ def bam_stylesheet(request):
     #read = Element("CATEGORY", id="read")
     dasttype2 = Element("TYPE", id="default")
     category.append(dasttype2)
-
     glyph2 = Element("GLPYH", zoom='high')
     dasttype2.append(glyph2)
-
     boxglpyh = Element("BOX")
     glyph2.append(boxglpyh)
     fgcolor = Element('FGCOLOR')
@@ -161,7 +156,6 @@ def feature_serializer(request, bundle, format_json=False, **kwargs):
                 value))
         segment = Element('SEGMENT', seg_query)
         das.append(segment)
-
 
         for i in bundle:
             # :TODO deal with feature types
