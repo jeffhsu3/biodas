@@ -164,12 +164,22 @@ class DasModelCalls(TestCase):
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 1)
 
-    def test_kent_binning(self):
-        """
+    def test_arbitrary_fields(self):
+        """ Test the return of arbitrary fields from the model
         """
         resp =\
-        self.client.get('/api/das/snps/features?segment=7:116182053-116182055')
-        print(resp)
+        self.client.get('/api/das/snps/features?segment=7:116182053,116182055')
+        self.assertIn('START', resp.content)
+        self.assertIn('COUNTS', resp.content)
+        segments = lxml.etree.fromstring(resp.content)
+        
+
+
+    def test_kent_binning(self):
+        """ Tests Kent Binning
+        """
+        resp =\
+        self.client.get('/api/das/snps/features?segment=7:116182053,116182055')
         self.assertEqual(1, 1)
     
 

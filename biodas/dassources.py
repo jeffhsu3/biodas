@@ -115,14 +115,12 @@ class DasBaseResource(Resource):
 
 
     def get_stylesheet(self, request, **kwargs):
-        print("Get Stylesheet Called'")
         registry = {getattr(self._meta , 'resource_name'): self}
         content = serializers.bam_stylesheet(request)
         response = HttpResponse(
                 content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
-        print(content)
         return response
 
     def get_list(self, request, **kwargs):
@@ -139,7 +137,6 @@ class DasBaseResource(Resource):
         return response
 
     def get_types(self, request, **kwargs):
-        print('get types called')
         registry = {getattr(self._meta , 'resource_name'): self}
         content = serializers.type_serializer(request)
         response = HttpResponse(
@@ -210,7 +207,6 @@ class DasModelResource(ModelResource):
             reference = int(reference)
         except ValueError:
             reference = reference
-        print(reference, start, stop)
         self.is_authenticated(request)
         try:
             if start:
@@ -224,12 +220,10 @@ class DasModelResource(ModelResource):
             # :TODO authorization check
         except ValueError:
             raise ValueError('Invalid Request')
-        # Do I need to convert to a bundle, or too much.  
-        '''
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
-        '''
+        print(to_be_serialized)
         try:
             content = feature_serializer(request, base_object_list, format_json = getattr(self._meta , 'json'), **query_seg)
         except:
