@@ -46,7 +46,23 @@ Querying over features:::
 
    /api/yourdata/features?segment=chr1:20,60
 
+Excluding Fields from the return can be done much like in django-tastypie::
 
+    class YourResource(DasModelResource):
+        class Meta:
+            resource_name ='yourdata'
+            queryset = YourModel.objects.all()
+
+            version = '36'
+            authority = 'NCBI'
+            excludes = ['CHROM', 'Extraneous_fields']
+
+note::
+
+    By default, fields such as chromosome, region, or segement id are left out
+    of the response as to meet the biodas 1.6 specification.
+
+Examples of models resources can be found in tests/core/tests/api.py
 
 Generating a resource from a file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

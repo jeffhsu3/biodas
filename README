@@ -3,6 +3,15 @@ Jeff Hsu
 Django and Tastypie implementation of a distributed annotation server (DAS) used
 for serving biological data.  Can be used to serve both DAS 1 and DAS 2.  
 
+This package needs a lot of work.  
+
+TODO:
+METHOD type needs to be specified
+TYPE type needs to be specified and create sane defaults
+JSON response needs to be better
+BIGBED support
+BIGWIG support
+
 Documentation: www.django-biodas.rtfd.org
 
 See www.biodas.org/wiki/Main_Page for the bioDAS specification.  

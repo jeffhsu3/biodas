@@ -126,7 +126,8 @@ class DasModelCalls(TestCase):
         self.snp.save()
 
     def test_top_level(self):
-        """ Test top level discovery query
+        """ Test top level discovery query.
+
         """
         resp = self.client.get('/api/das/sources/')
         self.assertEqual(resp.status_code, 200)
@@ -161,7 +162,7 @@ class DasModelCalls(TestCase):
         self.assertGreater(len(type_ele), 0)
 
     
-    def test_temp(self):
+    def test_type_is_added(self):
         """ Make sure type is added correctly
 
         This is a required field
@@ -209,9 +210,9 @@ class DasModelCalls(TestCase):
         
     
 
-
     def test_kent_binning(self):
         """ Tests Kent Binning
+        :TODO this needs work
         """
         self.assertEqual(1, 1)
     
