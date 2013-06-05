@@ -11,7 +11,10 @@ from tastypie.resources import (Resource, ModelResource,
 
 from utils import parse_das_segment, add_das_headers
 import serializers
-from serializers import feature_serializer, stylesheet_serializer
+from serializers import (feature_serializer, 
+        stylesheet_serializer, DASSerializer)
+from lxml.etree import Element, tostring
+
 
 FILETYPES = {
         'bam': 'bam_query',
@@ -27,6 +30,7 @@ class DasResourceOptions(ResourceOptions):
     """ Provides Human defaults for the metadata.  User really needs to set
     these however.
     """
+    serializer = DASSerializer()
 
     capability = "feature"
     chr_type = "Chromosome"
@@ -223,7 +227,9 @@ class DasModelResource(ModelResource):
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
-        print(to_be_serialized)
+        print('\n *** post dehydrate *** \n')
+        # passing reqeust into options is ...
+        print(self.serialize(request, to_be_serialized, 'xml', options=request))
         try:
             content = feature_serializer(request, base_object_list, format_json = getattr(self._meta , 'json'), **query_seg)
         except:

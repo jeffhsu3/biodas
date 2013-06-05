@@ -1,8 +1,69 @@
 """ Contains serializers.
 """
 
+import lxml
 from lxml.etree import Element, tostring
 import json
+from tastypie.resources import Serializer
+from tastypie.bundle import Bundle
+
+from django.core.exceptions import ImproperlyConfigured
+
+
+class DASSerializer(Serializer):
+    """ Extends Tastypie's serializer
+    """
+
+    def to_xml(self, data, options=None):
+        print('to_xml called')
+        options = options or {}
+        top = Element('DASSTYLE')
+        das = Element('GFF', href = options.path + '?' +\
+                options.META['QUERY_STRING'])
+        top.append(das)
+        if lxml is None:
+            raise ImproperlyConfigured("Usage of the XML aspects\
+                    requires lxml and defusedxml.")
+        out = self.to_etree(data, options)
+        print(das.append(out))
+        print('Data test')
+        """
+        for i in data:
+            print(i)
+        """
+        return (tostring(top))
+        """
+        return tostring(element.append(self.to_etree(data, options)), xml_declaration=True,
+                encoding='utf-8')
+        """
+
+    def to_etree(self, data, options = None, name = None, depth=0):
+        print('***** DATA TYPE *****')
+        print(type(data))
+        if isinstance(data, (list, tuple)):
+            print('************* Data is list')
+            element = Element(name or 'objects')
+            if name:
+                element = Element(name)
+                element.set('type', 'list')
+            else: 
+                element = Element('objects')
+        elif isinstance(data, Bundle):
+            print('singular bundle called')
+            element = Element(name or 'object')
+
+
+
+        return element
+
+    def serialize(self, bundle, fromat='application/json', options={}):
+        desired_format = 'None'
+        serialized = getattr(self, "to_%s" % 'xml')(bundle,options)
+        return serialized
+        
+
+
+
 
 def get_type(feat_obj):
     """ Attempt to get the type of a feature if it exists.
