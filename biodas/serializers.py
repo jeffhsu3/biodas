@@ -1,10 +1,10 @@
 """ Contains serializers.
 """
-
 import lxml
 from lxml.etree import Element, tostring
 import json
 from tastypie.resources import Serializer
+from tastypie.serializers import get_type_string, force_unicode
 from tastypie.bundle import Bundle
 
 from django.core.exceptions import ImproperlyConfigured
@@ -15,44 +15,75 @@ class DASSerializer(Serializer):
     """
 
     def to_xml(self, data, options=None):
-        print('to_xml called')
         options = options or {}
         top = Element('DASSTYLE')
-        das = Element('GFF', href = options.path + '?' +\
+        gff = Element('GFF', href = options.path + '?' +\
                 options.META['QUERY_STRING'])
-        top.append(das)
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects\
                     requires lxml and defusedxml.")
         out = self.to_etree(data, options)
-        print(das.append(out))
-        print('Data test')
-        """
-        for i in data:
-            print(i)
-        """
-        return (tostring(top))
-        """
-        return tostring(element.append(self.to_etree(data, options)), xml_declaration=True,
-                encoding='utf-8')
-        """
+        top.append(gff)
+        gff.append(out)
+        features = gff.xpath("SEGMENT/FEATURE")
+        for i in features:
+            try:
+                f_id = i.xpath("ID")
+                i.set('id', f_id[0].text)
+                i.remove(f_id[0])
+            except AttributeError:
+                print("NEED some sort of primary key")
+            method = Element("METHOD")
+            # :TODO make this a meta class option
+            method.text = 'my method'
+            ftype = Element("TYPE")
+            ftype.text = 'bleh'
+            i.append(method)
+            i.append(ftype)
+        return (tostring(top, xml_declaration=True, encoding='utf-8',
+            pretty_print=True))
 
     def to_etree(self, data, options = None, name = None, depth=0):
-        print('***** DATA TYPE *****')
-        print(type(data))
         if isinstance(data, (list, tuple)):
-            print('************* Data is list')
             element = Element(name or 'objects')
             if name:
                 element = Element(name)
                 element.set('type', 'list')
             else: 
-                element = Element('objects')
+                element = Element(name or 'SEGMENT')
+                for item in data:
+                    element.append(self.to_etree(item , 
+                        options, depth=depth+1))
+        
+        elif isinstance(data, dict):
+            if depth == 0:
+                element = Element(name or 'response')
+            else:
+                element = Element(name or 'object')
+                element.set('type', 'hash')
+            for (key, value) in data.iteritems():
+                element.append(self.to_etree(value, options,
+                    name=key,depth=depth+1))
+
         elif isinstance(data, Bundle):
-            print('singular bundle called')
-            element = Element(name or 'object')
+            element = Element(name or 'FEATURE')
+            for field_name, field_object in data.data.items():
+                element.append(self.to_etree(field_object, {},
+                    name=field_name, depth=depth+1))
+        else:
+            element = Element(name.upper() or 'value')
+            simple_data = self.to_simple(data, options)
+            data_type = get_type_string(simple_data)
+            """
+            if data_type != 'string':
+                element.set('type', get_type_string(simple_data))
+            """
 
-
+            if data_type != 'NULL':
+                if isinstance(simple_data, unicode):
+                    element.text = simple_data
+                else:
+                    element.text = force_unicode(simple_data)
 
         return element
 
@@ -61,8 +92,6 @@ class DASSerializer(Serializer):
         serialized = getattr(self, "to_%s" % 'xml')(bundle,options)
         return serialized
         
-
-
 
 
 def get_type(feat_obj):

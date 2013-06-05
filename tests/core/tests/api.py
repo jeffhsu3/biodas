@@ -25,11 +25,14 @@ class QTLResource(DasModelResource):
         resource_name = 'qtl'
         queryset = QTLEntry.objects.all()
 
+
 class SNPResource(DasModelResource):
     class Meta:
         version = 37
         resource_name = 'snps'
         queryset = SNPEntry.objects.all()
+        excludes = ['chrom', 'CHROM', 'region', 'KENT_BIN', 'kent_bin']
+
 
 class FileBedResource(DasResource):
     """ An example of a BED file used as a resource.  
@@ -118,6 +121,9 @@ class DasModelCalls(TestCase):
         self.snp = SNPEntry(chrom = 7, start=116182054, end=116182054,
         rsID="rs959173", kent_bin=1471, counts=30)
         self.snp.save()
+        self.snp = SNPEntry(chrom = 7, start=116182057, end=116182057,
+        rsID="rs959173", kent_bin=1471, counts=70)
+        self.snp.save()
 
     def test_top_level(self):
         """ Test top level discovery query
@@ -143,12 +149,37 @@ class DasModelCalls(TestCase):
         resp = self.client.get('/api/das/qtl/')
         self.assertEqual(len(root), 1)
 
+    
+    def test_method_is_added(self):
+        """ Make sure that the method and type are added correctly
+
+        This is a required fieeld
+        """
+        resp = self.client.get('/api/das/qtl/features?segment=1:100,20000')
+        dasgff = lxml.etree.fromstring(resp.content)
+        type_ele = dasgff.xpath("//GFF/SEGMENT/FEATURE/METHOD")
+        self.assertGreater(len(type_ele), 0)
+
+    
+    def test_temp(self):
+        """ Make sure type is added correctly
+
+        This is a required field
+        """
+        resp = self.client.get('/api/das/snps/features?segment=7:116182053,116182059')
+        dasgff = lxml.etree.fromstring(resp.content)
+        type_ele = dasgff.xpath("//GFF/SEGMENT/FEATURE/TYPE")
+        self.assertGreater(len(type_ele), 0)
+        type_feat = dasgff.xpath("//GFF/SEGMENT/FEATURE")
+        self.assertEqual(len(type_feat), len(type_ele))
+
 
     def test_resource_queries(self):
         """ Test segment queries on the resources
+        :TODO fix this.
         """
         resp = self.client.get('/api/das/qtl/features?segment=1:100,20000')
-        #dasgff = lxml.etree.fromstring(resp.content)
+        dasgff = lxml.etree.fromstring(resp.content)
         #self.assertEqual(dasgff[0][0][0].get('label'), 'within_interval')
 
 
@@ -164,17 +195,19 @@ class DasModelCalls(TestCase):
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 1)
 
+    
     def test_arbitrary_fields(self):
-        """ Test the return of arbitrary fields from the model
+        """ Test the return of arbitrary fields from the model and test
+        exclusion
         """
         resp =\
-        self.client.get('/api/das/snps/features?segment=7:116182053,116182055')
-        print('********** CONTENTS ****************')
+        self.client.get('/api/das/snps/features?segment=7:116182053,116182059')
         print(resp.content)
         self.assertIn('START', resp.content)
         self.assertIn('COUNTS', resp.content)
-        segments = lxml.etree.fromstring(resp.content)
+        self.assertNotIn('CHROM', resp.content)
         
+    
 
 
     def test_kent_binning(self):

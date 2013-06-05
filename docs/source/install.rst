@@ -28,7 +28,5 @@ Optional:
 
 * pysam (for serving BAM files)
 * cython (for serving BIGBED and BIGWIG)
-
-I highly recommend using pip.  
-
+* 
 

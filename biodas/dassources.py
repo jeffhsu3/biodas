@@ -227,13 +227,8 @@ class DasModelResource(ModelResource):
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
-        print('\n *** post dehydrate *** \n')
         # passing reqeust into options is ...
-        print(self.serialize(request, to_be_serialized, 'xml', options=request))
-        try:
-            content = feature_serializer(request, base_object_list, format_json = getattr(self._meta , 'json'), **query_seg)
-        except:
-            content = feature_serializer(request, base_object_list, **query_seg)
+        content = self.serialize(request, to_be_serialized, 'xml', options=request)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
