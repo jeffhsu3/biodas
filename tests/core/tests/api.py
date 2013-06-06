@@ -32,6 +32,7 @@ class SNPResource(DasModelResource):
         resource_name = 'snps'
         queryset = SNPEntry.objects.all()
         excludes = ['chrom', 'CHROM', 'region', 'KENT_BIN', 'kent_bin']
+        method = "NextGenSeq"
 
 
 class FileBedResource(DasResource):
@@ -150,6 +151,11 @@ class DasModelCalls(TestCase):
         resp = self.client.get('/api/das/qtl/')
         self.assertEqual(len(root), 1)
 
+    def test_feature_biodas_basics(self):
+        """ Test for some of the top level required fields
+        """
+        pass
+
     
     def test_method_is_added(self):
         """ Make sure that the method and type are added correctly
@@ -160,6 +166,8 @@ class DasModelCalls(TestCase):
         dasgff = lxml.etree.fromstring(resp.content)
         type_ele = dasgff.xpath("//GFF/SEGMENT/FEATURE/METHOD")
         self.assertGreater(len(type_ele), 0)
+        type_feat = dasgff.xpath("//GFF/SEGMENT/FEATURE")
+        self.assertEqual(len(type_feat), len(type_ele))
 
     
     def test_type_is_added(self):

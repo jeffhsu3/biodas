@@ -12,7 +12,7 @@ JSON response needs to be better
 BIGBED support
 BIGWIG support
 
-Documentation: www.django-biodas.rtfd.org
+Documentation: https://django-biodas.readthedocs.org/en/latest/
 
 See www.biodas.org/wiki/Main_Page for the bioDAS specification.  
 
@@ -26,3 +26,4 @@ lxml
 Optional requirements:
 pysam
 cython
+twobitreader

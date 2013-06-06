@@ -19,20 +19,24 @@ class DASSerializer(Serializer):
         top = Element('DASSTYLE')
         gff = Element('GFF', href = options.path + '?' +\
                 options.META['QUERY_STRING'])
+        print(options.META['QUERY_STRING'])
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects\
                     requires lxml and defusedxml.")
         out = self.to_etree(data, options)
         top.append(gff)
         gff.append(out)
+        ############# Add in segment required fields #############
         features = gff.xpath("SEGMENT/FEATURE")
         for i in features:
             try:
                 f_id = i.xpath("ID")
                 i.set('id', f_id[0].text)
                 i.remove(f_id[0])
+                f_link = i.xpath("RESOURCE_URI")
+                f_link[0].set('href', f_link[0].text)
             except AttributeError:
-                print("NEED some sort of primary key")
+                print('Serialization Error')
             method = Element("METHOD")
             # :TODO make this a meta class option
             method.text = 'my method'
@@ -87,8 +91,8 @@ class DASSerializer(Serializer):
 
         return element
 
-    def serialize(self, bundle, fromat='application/json', options={}):
-        desired_format = 'None'
+    def serialize(self, bundle, format='application/json', options={}):
+        desired_format = format
         serialized = getattr(self, "to_%s" % 'xml')(bundle,options)
         return serialized
         

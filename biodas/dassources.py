@@ -212,6 +212,7 @@ class DasModelResource(ModelResource):
         except ValueError:
             reference = reference
         self.is_authenticated(request)
+        # :TODO put this throught the regular filter
         try:
             if start:
                 base_object_list = self.get_object_list(request).filter(
