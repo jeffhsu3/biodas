@@ -2,6 +2,7 @@
 """
 import lxml
 from lxml.etree import Element, tostring
+import re
 import json
 from tastypie.resources import Serializer
 from tastypie.serializers import get_type_string, force_unicode
@@ -19,14 +20,21 @@ class DASSerializer(Serializer):
         top = Element('DASSTYLE')
         gff = Element('GFF', href = options.path + '?' +\
                 options.META['QUERY_STRING'])
-        print(options.META['QUERY_STRING'])
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects\
                     requires lxml and defusedxml.")
         out = self.to_etree(data, options)
         top.append(gff)
         gff.append(out)
-        ############# Add in segment required fields #############
+        try:
+            segment_id = re.search('segment=(.+):',
+                    options.META['QUERY_STRING']).group(1)
+        except AttributeError:
+            # For Whole segment queries
+            segment_id = re.search('segment=(.+)',
+                    options.META['QUERY_STRING']).group(1)
+        segments = gff.xpath("SEGMENT")
+        segments[0].set('id', segment_id)
         features = gff.xpath("SEGMENT/FEATURE")
         for i in features:
             try:
@@ -48,6 +56,8 @@ class DASSerializer(Serializer):
             pretty_print=True))
 
     def to_etree(self, data, options = None, name = None, depth=0):
+        """ Similar to 
+        """
         if isinstance(data, (list, tuple)):
             element = Element(name or 'objects')
             if name:

@@ -126,6 +126,7 @@ class DasModelCalls(TestCase):
         rsID="rs959173", kent_bin=1471, counts=70)
         self.snp.save()
 
+
     def test_top_level(self):
         """ Test top level discovery query.
 
@@ -151,12 +152,19 @@ class DasModelCalls(TestCase):
         resp = self.client.get('/api/das/qtl/')
         self.assertEqual(len(root), 1)
 
+    
     def test_feature_biodas_basics(self):
         """ Test for some of the top level required fields
         """
-        pass
+        resp = self.client.get('/api/das/qtl/features?segment=1:100,20000')
+        dasgff = lxml.etree.fromstring(resp.content)
+        type_gff = dasgff.xpath("//GFF")
+        self.assertEqual(len(type_gff), 1)
+        type_segment = dasgff.xpath("//GFF/SEGMENT")
+        for i in type_segment:
+            self.assertEqual(i.get('id'), '1')
 
-    
+
     def test_method_is_added(self):
         """ Make sure that the method and type are added correctly
 
@@ -211,7 +219,6 @@ class DasModelCalls(TestCase):
         """
         resp =\
         self.client.get('/api/das/snps/features?segment=7:116182053,116182059')
-        print(resp.content)
         self.assertIn('START', resp.content)
         self.assertIn('COUNTS', resp.content)
         self.assertNotIn('CHROM', resp.content)

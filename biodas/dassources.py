@@ -13,7 +13,6 @@ from utils import parse_das_segment, add_das_headers
 import serializers
 from serializers import (feature_serializer, 
         stylesheet_serializer, DASSerializer)
-from lxml.etree import Element, tostring
 
 
 FILETYPES = {
