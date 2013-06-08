@@ -2,11 +2,11 @@
 """
 import lxml
 from lxml.etree import Element, tostring
-import re
 import json
 from tastypie.resources import Serializer
 from tastypie.serializers import get_type_string, force_unicode
 from tastypie.bundle import Bundle
+#from tastypie.utils.mime import determine_format
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -18,23 +18,20 @@ class DASSerializer(Serializer):
     def to_xml(self, data, options=None):
         options = options or {}
         top = Element('DASSTYLE')
-        gff = Element('GFF', href = options.path + '?' +\
-                options.META['QUERY_STRING'])
+        gff = Element('GFF', href = options['request_path'] + '?' +\
+                options['request_string'])
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects\
                     requires lxml and defusedxml.")
         out = self.to_etree(data, options)
         top.append(gff)
         gff.append(out)
-        try:
-            segment_id = re.search('segment=(.+):',
-                    options.META['QUERY_STRING']).group(1)
-        except AttributeError:
-            # For Whole segment queries
-            segment_id = re.search('segment=(.+)',
-                    options.META['QUERY_STRING']).group(1)
         segments = gff.xpath("SEGMENT")
-        segments[0].set('id', segment_id)
+        segments[0].set('id', str(options['query']['id']))
+        if options['query']['start'] and options['query']['stop']:
+            segments[0].set('start', str(options['query']['start']))
+            segments[0].set('start', str(options['query']['stop']))
+        else: pass
         features = gff.xpath("SEGMENT/FEATURE")
         for i in features:
             try:
@@ -47,7 +44,7 @@ class DASSerializer(Serializer):
                 print('Serialization Error')
             method = Element("METHOD")
             # :TODO make this a meta class option
-            method.text = 'my method'
+            method.text = options['method']
             ftype = Element("TYPE")
             ftype.text = 'bleh'
             i.append(method)
@@ -103,7 +100,7 @@ class DASSerializer(Serializer):
 
     def serialize(self, bundle, format='application/json', options={}):
         desired_format = format
-        serialized = getattr(self, "to_%s" % 'xml')(bundle,options)
+        serialized = getattr(self, "to_%s" % 'xml')(bundle, options)
         return serialized
         
 

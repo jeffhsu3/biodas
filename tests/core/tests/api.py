@@ -34,7 +34,7 @@ class SNPResource(DasModelResource):
         excludes = ['chrom', 'CHROM', 'region', 'KENT_BIN', 'kent_bin']
         method = "NextGenSeq"
 
-
+'''
 class FileBedResource(DasResource):
     """ An example of a BED file used as a resource.  
 
@@ -44,7 +44,7 @@ class FileBedResource(DasResource):
     class Meta:
         resource_name = 'testbed'
         filename = os.path.join(os.path.dirname(__file__), 'test.bed')
-
+        print(filename)
 
 
 class FileBamResource(DasResource):
@@ -54,6 +54,7 @@ class FileBamResource(DasResource):
         resource_name = 'testbam'
         filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                 'fixtures/AKR_brain_test.bam')
+        print(filename)
 
 
 class FileBamJsonResource(DasResource):
@@ -64,7 +65,8 @@ class FileBamJsonResource(DasResource):
         json = True
         filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                 'fixtures/AKR_brain_test.bam')
-
+        print(filename)
+'''
 
 class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
@@ -224,6 +226,16 @@ class DasModelCalls(TestCase):
         self.assertNotIn('CHROM', resp.content)
         
     
+    def test_json_response(self):
+        """ Test the return of arbitrary fields from the model and test
+        exclusion
+        """
+        resp =\
+        self.client.get('/api/das/snps/features?segment=7:116182053,116182059',
+                HTTP_ACCEPT='application/xml')
+        self.assertIn('START', resp.content)
+        self.assertIn('COUNTS', resp.content)
+        self.assertNotIn('CHROM', resp.content)
 
     def test_kent_binning(self):
         """ Tests Kent Binning
@@ -232,7 +244,7 @@ class DasModelCalls(TestCase):
         self.assertEqual(1, 1)
     
 
-
+'''
 class DasFileSourcesTest(TestCase):
     def setUp(self):
         self.fh = pysam.Samfile(os.path.join(os.path.dirname(os.path.dirname(__file__)), 
@@ -268,7 +280,6 @@ class DasFileSourcesTest(TestCase):
         segments = lxml.etree.fromstring(resp.content)[0][0]
         self.assertEqual(len(segments), 3)
 
-    
     def test_bam_feature_queries(self):
         """ Test BAM feature queries
         """
@@ -297,6 +308,6 @@ class DasFileSourcesTest(TestCase):
                 self.client.get(
                         '/api/das/testjsonbam/features?segment=chr7:3299628,3300000')
         self.assertEqual(len(json.loads(resp.content)), 3)
-
+'''
 
 

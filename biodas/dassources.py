@@ -13,6 +13,7 @@ from utils import parse_das_segment, add_das_headers
 import serializers
 from serializers import (feature_serializer, 
         stylesheet_serializer, DASSerializer)
+from tastypie.utils.mime import determine_format
 
 
 FILETYPES = {
@@ -35,6 +36,8 @@ class DasResourceOptions(ResourceOptions):
     chr_type = "Chromosome"
     authority = "GRCh"
     version = 37
+    method = 'Default'
+    ftype = 'Default'
 
     filename = 'placeholder.bed'
     queryfunc = ''
@@ -75,13 +78,14 @@ class DasFileMetaclass(DeclarativeMetaclass):
                     filetype = extension
                     setattr(new_class._meta, "filetype", filetype)
                 else:
-                    raise KeyError("No extension of filename found")
+                    raise KeyError("Bleg No extension of filename found")
+
             except IndexError:
                 raise KeyError("No extension of filename found")
         else:
             # Check if it is a valid filetype
             pass
-
+        print('end')
         return new_class
 
 
@@ -227,8 +231,15 @@ class DasModelResource(ModelResource):
         bundles = [self.build_bundle(obj=obj, request=request) for obj in\
                 base_object_list]
         to_be_serialized = [self.full_dehydrate(bundle) for bundle in bundles]
-        # passing reqeust into options is ...
-        content = self.serialize(request, to_be_serialized, 'xml', options=request)
+        # passing reqeust into options is, maybe I should pass in the whole
+        # request? 
+        options = {'query': query_seg, 
+                'method': self._meta.method, 
+                'request_string': request.META['QUERY_STRING'],
+                'request_path': request.path,
+        }
+        content = self.serialize(request, to_be_serialized, 'xml',
+                options=options)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
