@@ -34,7 +34,6 @@ class SNPResource(DasModelResource):
         excludes = ['chrom', 'CHROM', 'region', 'KENT_BIN', 'kent_bin']
         method = "NextGenSeq"
 
-'''
 class FileBedResource(DasResource):
     """ An example of a BED file used as a resource.  
 
@@ -43,8 +42,7 @@ class FileBedResource(DasResource):
     filename = os.path.join(os.path.dirname(__file__), 'test.bed')
     class Meta:
         resource_name = 'testbed'
-        filename = os.path.join(os.path.dirname(__file__), 'test.bed')
-        print(filename)
+        filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'fixtures/test.bed')
 
 
 class FileBamResource(DasResource):
@@ -54,7 +52,6 @@ class FileBamResource(DasResource):
         resource_name = 'testbam'
         filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                 'fixtures/AKR_brain_test.bam')
-        print(filename)
 
 
 class FileBamJsonResource(DasResource):
@@ -65,8 +62,6 @@ class FileBamJsonResource(DasResource):
         json = True
         filename = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
                 'fixtures/AKR_brain_test.bam')
-        print(filename)
-'''
 
 class ApiTestCase(TestCase):
     urls = 'core.tests.api_urls'
@@ -97,7 +92,6 @@ class ApiTestCase(TestCase):
         resp = api.top_level(request)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp['X-DAS-Version'], 'DAS/1.6')
-
 
 
 class DasModelCalls(TestCase):
@@ -242,9 +236,8 @@ class DasModelCalls(TestCase):
         :TODO this needs work
         """
         self.assertEqual(1, 1)
-    
 
-'''
+
 class DasFileSourcesTest(TestCase):
     def setUp(self):
         self.fh = pysam.Samfile(os.path.join(os.path.dirname(os.path.dirname(__file__)), 
@@ -308,6 +301,5 @@ class DasFileSourcesTest(TestCase):
                 self.client.get(
                         '/api/das/testjsonbam/features?segment=chr7:3299628,3300000')
         self.assertEqual(len(json.loads(resp.content)), 3)
-'''
 
 

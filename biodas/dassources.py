@@ -5,6 +5,7 @@ from itertools import izip
 from django.conf.urls.defaults import url
 from django.http import HttpResponse
 from django.db.models import Q
+from tastypie.bundle import Bundle
 from tastypie.resources import (Resource, ModelResource,
                                 DeclarativeMetaclass, ResourceOptions,
                                 ModelDeclarativeMetaclass)
@@ -85,7 +86,6 @@ class DasFileMetaclass(DeclarativeMetaclass):
         else:
             # Check if it is a valid filetype
             pass
-        print('end')
         return new_class
 
 
@@ -291,23 +291,41 @@ class DasResource(DasBaseResource):
             reference, start, stop = parse_das_segment(request)
         query_seg = {'id': self._meta.ref_prefix + reference, 'start':start, 'stop':stop}
 
-
         query_method = getattr(self, "%s_query" % self._meta.filetype,  None)
         if query_method:
             hits = query_method(**query_seg)
         else:
             raise NotImplementedError("No query function implemented for\
                     filetype %s" % self._meta.filetype)
-
-        try:
-            content = feature_serializer(request, hits, format_json = getattr(self._meta , 'json'), **query_seg) 
-        except:
-            content = feature_serializer(request, hits, **query_seg) 
+        options = {'query': query_seg, 
+                'method': self._meta.method, 
+                'request_string': request.META['QUERY_STRING'],
+                'request_path': request.path,
+        }
+        """
+        to_be_serialized = [self.build_bundle(data = i.__dict__,
+            request=request) for i in hits]
+    
+        content = feature_serializer(request, hits, **query_seg) 
+        """
+        to_be_serialized = []
+        for i in hits:
+            to_be_serialized.append(Bundle(data=i.__dict__, request=request))
+        #self.full_dehydrate(hits)
+        content = self.serialize(request, to_be_serialized, 'xml',
+                options=options)
         response = HttpResponse(content = content,
                 content_type = 'application/xml')
         response = add_das_headers(response)
         return response
+    
 
+    def full_dehydrate(self, bundle, for_list=False):
+        """
+        """
+        for field_name, filed_object in self.fields.items():
+            #print(field_name)
+            pass
 
     def bed_query(self, **kwargs):
         ''' Returns a list of hits.

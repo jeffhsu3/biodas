@@ -23,6 +23,7 @@ class DASSerializer(Serializer):
         if lxml is None:
             raise ImproperlyConfigured("Usage of the XML aspects\
                     requires lxml and defusedxml.")
+        #print("REQUEST: " + options['request_path'] + options['request_string'])
         out = self.to_etree(data, options)
         top.append(gff)
         gff.append(out)
@@ -42,6 +43,12 @@ class DASSerializer(Serializer):
                 f_link[0].set('href', f_link[0].text)
             except AttributeError:
                 print('Serialization Error')
+            except IndexError:
+                # Occurs for non Models since no id is guranteeded
+                # Can't gurantee uniquess either
+                f_id = i.xpath("NAME")
+                i.set('id', f_id[0].text)
+                i.remove(f_id[0])
             method = Element("METHOD")
             # :TODO make this a meta class option
             method.text = options['method']
@@ -95,7 +102,6 @@ class DASSerializer(Serializer):
                     element.text = simple_data
                 else:
                     element.text = force_unicode(simple_data)
-
         return element
 
     def serialize(self, bundle, format='application/json', options={}):
